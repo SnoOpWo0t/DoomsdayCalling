@@ -3,6 +3,7 @@
   max-height: calc(100dvh - 2rem);
   margin: auto;
   padding: 0;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -29,7 +30,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - 2rem - 2px);
 }
 
 .header {
