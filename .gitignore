@@ -31,3 +31,6 @@ coverage/
 
 # Assessment brief (kept locally, not published)
 *.pdf
+
+# Browser automation output
+.playwright-mcp/
