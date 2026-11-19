@@ -1,4 +1,5 @@
 import { Link2, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router';
 import type { Movie } from '../../api/types';
 import { IconButton } from '../../components/ui/Button';
 import { Poster } from '../../components/ui/Poster';
@@ -24,11 +25,21 @@ export function MovieRow({
 }: MovieRowProps) {
   return (
     <li className={styles.row} data-watched={movie.watched}>
-      <Poster title={movie.title} posterPath={movie.posterPath} size="xs" />
+      <Link to={`/titles/${movie.id}`} className={styles.posterLink} tabIndex={-1} aria-hidden>
+        <Poster
+          title={movie.title}
+          posterPath={movie.posterPath}
+          posterUrl={movie.posterUrl}
+          size="xs"
+        />
+      </Link>
 
       <div className={styles.info}>
         <h3 className={styles.title}>
-          {movie.title} {movie.kind === 'series' && <SeriesBadge />}
+          <Link to={`/titles/${movie.id}`} className={styles.titleLink}>
+            {movie.title}
+          </Link>{' '}
+          {movie.kind === 'series' && <SeriesBadge />}
         </h3>
         <p className={styles.meta}>
           <span>{movie.releaseYear}</span>

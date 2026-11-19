@@ -18,6 +18,7 @@ const movie = (id: number, title: string, releaseYear: number): Movie => ({
   watched: false,
   tmdbId: null,
   posterPath: null,
+  posterUrl: null,
   prerequisiteIds: [],
   createdAt: '',
   updatedAt: '',

@@ -43,10 +43,17 @@ export function PlanTimeline({ movies, target, onToggleWatched }: PlanTimelinePr
                 title={movie.title}
                 onChange={(watched) => onToggleWatched(movie, watched)}
               />
-              <Poster title={movie.title} posterPath={movie.posterPath} size="xs" />
+              <Poster
+                title={movie.title}
+                posterPath={movie.posterPath}
+                posterUrl={movie.posterUrl}
+                size="xs"
+              />
               <div className={styles.info}>
                 <p className={styles.title}>
-                  {movie.title}
+                  <Link to={`/titles/${movie.id}`} className={styles.titleLink}>
+                    {movie.title}
+                  </Link>
                   {movie.kind === 'series' && <SeriesBadge />}
                   {isNext && <span className={styles.nextBadge}>Up next</span>}
                 </p>
