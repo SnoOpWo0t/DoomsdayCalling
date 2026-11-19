@@ -7,9 +7,11 @@ export const TITLE_UNIQUE_INDEX = 'movies_title_unique';
 
 const SELECT_MOVIE = `
   SELECT m.id,
+         m.kind,
          m.title,
          m.release_year    AS "releaseYear",
          m.runtime_minutes AS "runtimeMinutes",
+         m.episode_count   AS "episodeCount",
          m.watched,
          m.tmdb_id         AS "tmdbId",
          m.poster_path     AS "posterPath",
@@ -59,17 +61,27 @@ export async function insertMovie(
   db: Queryable,
   movie: Pick<
     Movie,
-    'title' | 'releaseYear' | 'runtimeMinutes' | 'watched' | 'tmdbId' | 'posterPath'
+    | 'kind'
+    | 'title'
+    | 'releaseYear'
+    | 'runtimeMinutes'
+    | 'episodeCount'
+    | 'watched'
+    | 'tmdbId'
+    | 'posterPath'
   >,
 ): Promise<number> {
   const { rows } = await db.query<{ id: number }>(
-    `INSERT INTO movies (title, release_year, runtime_minutes, watched, tmdb_id, poster_path)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO movies
+       (kind, title, release_year, runtime_minutes, episode_count, watched, tmdb_id, poster_path)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
     [
+      movie.kind,
       movie.title,
       movie.releaseYear,
       movie.runtimeMinutes,
+      movie.episodeCount,
       movie.watched,
       movie.tmdbId,
       movie.posterPath,
@@ -80,9 +92,11 @@ export async function insertMovie(
 
 /** Maps API field names to columns. Only these columns can ever be updated. */
 const UPDATABLE_COLUMNS = {
+  kind: 'kind',
   title: 'title',
   releaseYear: 'release_year',
   runtimeMinutes: 'runtime_minutes',
+  episodeCount: 'episode_count',
   watched: 'watched',
   tmdbId: 'tmdb_id',
   posterPath: 'poster_path',
@@ -158,8 +172,11 @@ export async function lockPrerequisiteGraph(db: Queryable): Promise<void> {
   await db.query("SELECT pg_advisory_xact_lock(hashtext('movie_prerequisite_graph'))");
 }
 
-/** Locks one movie row for the rest of the transaction; returns false if it does not exist. */
-export async function lockMovie(db: Queryable, id: number): Promise<boolean> {
-  const { rowCount } = await db.query('SELECT 1 FROM movies WHERE id = $1 FOR UPDATE', [id]);
-  return (rowCount ?? 0) > 0;
+/** Locks one title row for the rest of the transaction; returns its kind, or undefined if missing. */
+export async function lockMovie(db: Queryable, id: number): Promise<Movie['kind'] | undefined> {
+  const { rows } = await db.query<{ kind: Movie['kind'] }>(
+    'SELECT kind FROM movies WHERE id = $1 FOR UPDATE',
+    [id],
+  );
+  return rows[0]?.kind;
 }

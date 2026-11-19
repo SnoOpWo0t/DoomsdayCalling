@@ -3,7 +3,11 @@ import { AppError, ErrorCode, notFound } from '../../lib/errors.js';
 import { isUniqueViolation } from '../../lib/pg-errors.js';
 import { findCycle, rewatchOrder } from './dependency-graph.js';
 import * as repo from './movie.repository.js';
-import type { CreateMovieInput, UpdateMovieInput } from './movie.schemas.js';
+import {
+  MOVIE_EPISODES_MESSAGE,
+  type CreateMovieInput,
+  type UpdateMovieInput,
+} from './movie.schemas.js';
 import type { Movie, RewatchPlan } from './movie.types.js';
 
 export function createMovieService(db: Db) {
@@ -39,7 +43,20 @@ export function createMovieService(db: Db) {
         const { prerequisiteIds, ...fields } = patch;
 
         if (prerequisiteIds !== undefined) await repo.lockPrerequisiteGraph(tx);
-        if (!(await repo.lockMovie(tx, id))) throw notFound('Movie', id);
+        const currentKind = await repo.lockMovie(tx, id);
+        if (!currentKind) throw notFound('Movie', id);
+
+        // A movie always has one episode: switching to "movie" resets the
+        // count, and a movie cannot be given more episodes.
+        const nextKind = fields.kind ?? currentKind;
+        if (nextKind === 'movie') {
+          if (fields.episodeCount !== undefined && fields.episodeCount !== 1) {
+            throw new AppError(400, ErrorCode.VALIDATION_ERROR, MOVIE_EPISODES_MESSAGE, [
+              { path: 'episodeCount', message: MOVIE_EPISODES_MESSAGE },
+            ]);
+          }
+          if (fields.kind === 'movie') fields.episodeCount = 1;
+        }
 
         if (prerequisiteIds !== undefined) {
           await assertPrerequisitesExist(tx, prerequisiteIds);
@@ -80,7 +97,7 @@ export function createMovieService(db: Db) {
         movies,
         totalCount: movies.length,
         watchedCount: movies.length - unwatched.length,
-        unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + movie.runtimeMinutes, 0),
+        unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + watchTime(movie), 0),
       };
     },
 
@@ -89,6 +106,11 @@ export function createMovieService(db: Db) {
       if (!deleted) throw notFound('Movie', id);
     },
   };
+}
+
+/** Minutes needed to watch a title in full: a movie's runtime, or every episode of a series. */
+export function watchTime(movie: Pick<Movie, 'runtimeMinutes' | 'episodeCount'>): number {
+  return movie.runtimeMinutes * movie.episodeCount;
 }
 
 export type MovieService = ReturnType<typeof createMovieService>;
