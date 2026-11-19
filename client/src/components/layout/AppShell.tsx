@@ -19,10 +19,10 @@ export function AppShell() {
 
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <NavLink to="/" className={styles.brand} aria-label="Doomsday Ready home">
+          <NavLink to="/" className={styles.brand} aria-label="Doomsday Calling home">
             <span className={styles.brandMark} aria-hidden />
             <span className={styles.brandText}>
-              Doomsday <span className={styles.brandAccent}>Ready</span>
+              Doomsday <span className={styles.brandAccent}>Calling</span>
             </span>
           </NavLink>
 

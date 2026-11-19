@@ -1,4 +1,4 @@
-/** Shapes returned by the Doomsday Ready API. Dates arrive as ISO strings. */
+/** Shapes returned by the Doomsday Calling API. Dates arrive as ISO strings. */
 
 export interface Movie {
   id: number;
