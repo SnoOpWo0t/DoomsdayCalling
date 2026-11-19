@@ -1,0 +1,11 @@
+.page {
+  max-width: 36rem;
+  margin: var(--space-16) auto;
+  padding: 0 var(--space-6);
+}
+
+.link {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}

@@ -1,0 +1,50 @@
+.poster {
+  flex: none;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--color-surface-raised);
+  box-shadow:
+    0 0 0 1px oklch(1 0 0 / 0.06),
+    0 6px 16px -8px oklch(0 0 0 / 0.8);
+}
+
+.xs {
+  width: 2.5rem;
+}
+
+.sm {
+  width: 3.5rem;
+}
+
+.md {
+  width: 7rem;
+  border-radius: var(--radius-md);
+}
+
+.fallback {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(160deg, oklch(0.28 0.02 163 / 0.9), oklch(0.18 0.01 150)),
+    var(--color-surface-raised);
+}
+
+.initials {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.xs .initials {
+  font-size: var(--text-sm);
+}
+
+.sm .initials {
+  font-size: var(--text-lg);
+}
+
+.md .initials {
+  font-size: var(--text-3xl);
+}
