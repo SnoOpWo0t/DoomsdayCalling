@@ -34,6 +34,8 @@ async function seedMovies(db: Db, log: Log): Promise<void> {
       releaseYear: sample.releaseYear,
       runtimeMinutes: sample.runtimeMinutes,
       watched: false,
+      tmdbId: null,
+      posterPath: null,
       prerequisiteIds: sample.prerequisites.map((title) => idsByTitle.get(title)!),
     });
     idsByTitle.set(movie.title, movie.id);

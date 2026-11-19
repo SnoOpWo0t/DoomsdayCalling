@@ -4,6 +4,10 @@ export interface Movie {
   releaseYear: number;
   runtimeMinutes: number;
   watched: boolean;
+  /** Optional link to The Movie Database. */
+  tmdbId: number | null;
+  /** TMDb poster file path (e.g. "/abc.jpg"); the client chooses the image size. */
+  posterPath: string | null;
   /** Ids of the movies to watch before this one. */
   prerequisiteIds: number[];
   createdAt: Date;
