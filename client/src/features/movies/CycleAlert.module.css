@@ -1,0 +1,36 @@
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.step,
+.endpoint {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.step {
+  background: var(--color-surface-raised);
+}
+
+.endpoint {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  box-shadow: inset 0 0 0 1px var(--color-danger-line);
+}
+
+.arrow {
+  color: var(--color-text-subtle);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
