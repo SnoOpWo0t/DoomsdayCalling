@@ -19,7 +19,7 @@ export function DeleteMovieDialog({ movie, dependents, onClose }: DeleteMovieDia
     <Dialog
       open
       onClose={onClose}
-      title="Delete movie?"
+      title={`Delete ${movie.kind}?`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>

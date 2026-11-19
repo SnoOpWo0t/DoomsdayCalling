@@ -99,6 +99,10 @@
     color var(--duration-fast) var(--ease-out);
 }
 
+.navLink svg {
+  flex: none;
+}
+
 .navLink:hover {
   background: var(--color-surface-raised);
   color: var(--color-text);

@@ -38,7 +38,7 @@ export function PrerequisitePicker({ movies, selectedIds, onChange }: Prerequisi
       </div>
 
       {movies.length === 0 ? (
-        <p className={styles.empty}>Add more movies to link prerequisites.</p>
+        <p className={styles.empty}>Add more titles to link prerequisites.</p>
       ) : (
         <>
           {movies.length > 6 && (
@@ -49,7 +49,7 @@ export function PrerequisitePicker({ movies, selectedIds, onChange }: Prerequisi
                 type="search"
                 value={filter}
                 onChange={(event) => setFilter(event.target.value)}
-                placeholder="Filter movies"
+                placeholder="Filter titles"
               />
             </label>
           )}
@@ -70,12 +70,15 @@ export function PrerequisitePicker({ movies, selectedIds, onChange }: Prerequisi
                       <Check size={12} strokeWidth={3} />
                     </span>
                     <span className={styles.title}>{movie.title}</span>
-                    <span className={styles.year}>{movie.releaseYear}</span>
+                    <span className={styles.year}>
+                      {movie.kind === 'series' && 'Series · '}
+                      {movie.releaseYear}
+                    </span>
                   </label>
                 </li>
               );
             })}
-            {visible.length === 0 && <li className={styles.empty}>No movies match "{filter}".</li>}
+            {visible.length === 0 && <li className={styles.empty}>No titles match "{filter}".</li>}
           </ul>
         </>
       )}

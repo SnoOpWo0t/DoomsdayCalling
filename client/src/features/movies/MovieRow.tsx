@@ -3,7 +3,8 @@ import type { Movie } from '../../api/types';
 import { IconButton } from '../../components/ui/Button';
 import { Poster } from '../../components/ui/Poster';
 import { WatchToggle } from '../../components/ui/WatchToggle';
-import { formatRuntime } from '../../lib/format';
+import { SeriesBadge } from '../../components/ui/SeriesBadge';
+import { describeLength } from '../../lib/format';
 import styles from './MovieRow.module.css';
 
 export interface MovieRowProps {
@@ -26,11 +27,13 @@ export function MovieRow({
       <Poster title={movie.title} posterPath={movie.posterPath} size="xs" />
 
       <div className={styles.info}>
-        <h3 className={styles.title}>{movie.title}</h3>
+        <h3 className={styles.title}>
+          {movie.title} {movie.kind === 'series' && <SeriesBadge />}
+        </h3>
         <p className={styles.meta}>
           <span>{movie.releaseYear}</span>
           <span aria-hidden>·</span>
-          <span>{formatRuntime(movie.runtimeMinutes)}</span>
+          <span>{describeLength(movie)}</span>
         </p>
         <p className={styles.prerequisites}>
           <Link2 size={14} aria-hidden />
