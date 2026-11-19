@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { createMovieSchema, movieIdParam, updateMovieSchema } from './movie.schemas.js';
+import type { MetadataService } from '../metadata/metadata.service.js';
 import type { MovieService } from './movie.service.js';
+import type { Movie } from './movie.types.js';
 
-export function movieRoutes(movies: MovieService): Router {
+const byReleaseThenTitle = (a: Movie, b: Movie) =>
+  a.releaseYear - b.releaseYear || a.title.localeCompare(b.title);
+
+export function movieRoutes(movies: MovieService, metadata: MetadataService): Router {
   const router = Router();
 
   router.get('/', async (_req, res) => {
@@ -17,6 +22,28 @@ export function movieRoutes(movies: MovieService): Router {
   router.get('/:id', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
     res.json(await movies.get(id));
+  });
+
+  /**
+   * Everything the details page needs in one request: the title, what to
+   * watch before it, what it unlocks, and external details (poster,
+   * overview, genres, rating). External details are best effort: if every
+   * source is unreachable the page still works with `metadata: null`.
+   */
+  router.get('/:id/details', async (req, res) => {
+    const { id } = movieIdParam.parse(req.params);
+    const movie = await movies.get(id);
+    const all = await movies.list();
+    const prerequisiteIds = new Set(movie.prerequisiteIds);
+
+    res.json({
+      movie,
+      prerequisites: all.filter((other) => prerequisiteIds.has(other.id)).sort(byReleaseThenTitle),
+      dependents: all
+        .filter((other) => other.prerequisiteIds.includes(movie.id))
+        .sort(byReleaseThenTitle),
+      metadata: await metadata.get(movie).catch(() => null),
+    });
   });
 
   router.get('/:id/rewatch-order', async (req, res) => {

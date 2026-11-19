@@ -15,6 +15,8 @@ const SELECT_MOVIE = `
          m.watched,
          m.tmdb_id         AS "tmdbId",
          m.poster_path     AS "posterPath",
+         (SELECT md.poster_url FROM title_metadata md WHERE md.movie_id = m.id)
+                           AS "posterUrl",
          COALESCE(
            (SELECT array_agg(p.prerequisite_id ORDER BY p.prerequisite_id)
               FROM movie_prerequisites p
