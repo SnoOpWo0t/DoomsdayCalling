@@ -1,7 +1,7 @@
 import { createCinemaService } from '../modules/cinemas/cinema.service.js';
 import { createMovieService } from '../modules/movies/movie.service.js';
 import type { Db } from './pool.js';
-import { SAMPLE_CINEMAS, SAMPLE_MOVIES } from './sample-data.js';
+import { EXTRA_SAMPLE_TITLES, SAMPLE_CINEMAS, SAMPLE_MOVIES } from './sample-data.js';
 
 type Log = (message: string) => void;
 
@@ -28,8 +28,11 @@ async function seedMovies(db: Db, log: Log): Promise<void> {
 
   const movies = createMovieService(db);
   const idsByTitle = new Map<string, number>();
-  for (const sample of SAMPLE_MOVIES) {
+  const samples = [...SAMPLE_MOVIES, ...EXTRA_SAMPLE_TITLES];
+  for (const sample of samples) {
     const movie = await movies.create({
+      kind: sample.kind ?? 'movie',
+      episodeCount: sample.episodeCount ?? 1,
       title: sample.title,
       releaseYear: sample.releaseYear,
       runtimeMinutes: sample.runtimeMinutes,
@@ -40,7 +43,7 @@ async function seedMovies(db: Db, log: Log): Promise<void> {
     });
     idsByTitle.set(movie.title, movie.id);
   }
-  log(`Seeded ${SAMPLE_MOVIES.length} movies.`);
+  log(`Seeded ${samples.length} movies and series.`);
 }
 
 async function seedCinemas(db: Db, log: Log): Promise<void> {

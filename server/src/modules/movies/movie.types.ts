@@ -1,8 +1,18 @@
+export type TitleKind = 'movie' | 'series';
+
+/**
+ * A title in the catalogue: a movie or a series. The API keeps the brief's
+ * "movie" naming; `kind` distinguishes the two.
+ */
 export interface Movie {
   id: number;
+  kind: TitleKind;
   title: string;
   releaseYear: number;
+  /** Runtime of a movie, or the typical episode length of a series. */
   runtimeMinutes: number;
+  /** Always 1 for movies. */
+  episodeCount: number;
   watched: boolean;
   /** Optional link to The Movie Database. */
   tmdbId: number | null;
@@ -25,6 +35,6 @@ export interface RewatchPlan {
   movies: Movie[];
   totalCount: number;
   watchedCount: number;
-  /** Total runtime of the movies in `movies` that are not yet watched. */
+  /** Total watch time (runtime x episodes) of the titles in `movies` not yet watched. */
   unwatchedRuntimeMinutes: number;
 }

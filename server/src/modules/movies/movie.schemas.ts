@@ -21,6 +21,18 @@ const runtimeMinutes = z
   .min(1, 'Runtime must be between 1 and 300 minutes.')
   .max(300, 'Runtime must be between 1 and 300 minutes.');
 
+export const MAX_EPISODES = 500;
+
+const kind = z.enum(['movie', 'series'], { error: 'Kind must be "movie" or "series".' });
+
+const episodeCount = z
+  .number({ error: 'Episode count must be a number.' })
+  .int('Episode count must be a whole number.')
+  .min(1, `Episode count must be between 1 and ${MAX_EPISODES}.`)
+  .max(MAX_EPISODES, `Episode count must be between 1 and ${MAX_EPISODES}.`);
+
+const MOVIE_EPISODES_MESSAGE = 'A movie has exactly one episode; set kind to "series".';
+
 const watched = z.boolean({ error: 'Watched must be true or false.' });
 
 const tmdbId = z.number().int().positive('TMDb id must be a positive integer.').nullable();
@@ -41,21 +53,31 @@ export const movieIdParam = z.object({
   id: z.coerce.number().int().positive('Movie id must be a positive integer.'),
 });
 
-export const createMovieSchema = z.strictObject({
-  title,
-  releaseYear,
-  runtimeMinutes,
-  watched: watched.default(false),
-  tmdbId: tmdbId.default(null),
-  posterPath: posterPath.default(null),
-  prerequisiteIds: prerequisiteIds.default([]),
-});
+export const createMovieSchema = z
+  .strictObject({
+    kind: kind.default('movie'),
+    title,
+    releaseYear,
+    runtimeMinutes,
+    episodeCount: episodeCount.optional(),
+    watched: watched.default(false),
+    tmdbId: tmdbId.default(null),
+    posterPath: posterPath.default(null),
+    prerequisiteIds: prerequisiteIds.default([]),
+  })
+  .refine((input) => input.kind === 'series' || (input.episodeCount ?? 1) === 1, {
+    message: MOVIE_EPISODES_MESSAGE,
+    path: ['episodeCount'],
+  })
+  .transform((input) => ({ ...input, episodeCount: input.episodeCount ?? 1 }));
 
 export const updateMovieSchema = z
   .strictObject({
+    kind: kind.optional(),
     title: title.optional(),
     releaseYear: releaseYear.optional(),
     runtimeMinutes: runtimeMinutes.optional(),
+    episodeCount: episodeCount.optional(),
     watched: watched.optional(),
     tmdbId: tmdbId.optional(),
     posterPath: posterPath.optional(),
@@ -63,7 +85,13 @@ export const updateMovieSchema = z
   })
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
     message: 'Provide at least one field to update.',
+  })
+  .refine((patch) => patch.kind !== 'movie' || (patch.episodeCount ?? 1) === 1, {
+    message: MOVIE_EPISODES_MESSAGE,
+    path: ['episodeCount'],
   });
+
+export { MOVIE_EPISODES_MESSAGE };
 
 export type CreateMovieInput = z.infer<typeof createMovieSchema>;
 export type UpdateMovieInput = z.infer<typeof updateMovieSchema>;

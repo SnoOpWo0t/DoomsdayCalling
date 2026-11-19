@@ -7,9 +7,12 @@
  * the list, so the data can be inserted in a single pass.
  */
 export interface SampleMovie {
+  kind?: 'movie' | 'series';
   title: string;
   releaseYear: number;
+  /** Movie runtime, or typical episode length for a series. */
   runtimeMinutes: number;
+  episodeCount?: number;
   prerequisites: string[];
 }
 
@@ -51,6 +54,36 @@ export const SAMPLE_MOVIES: readonly SampleMovie[] = [
     releaseYear: 2026,
     runtimeMinutes: 150,
     prerequisites: ['Avengers: Endgame'],
+  },
+];
+
+/**
+ * Extra titles that show series and movies depending on each other. They all
+ * come *after* Avengers: Endgame, so the brief's expected rewatch results
+ * (e.g. 7 titles before Avengers: Doomsday) are unchanged.
+ */
+export const EXTRA_SAMPLE_TITLES: readonly SampleMovie[] = [
+  {
+    kind: 'series',
+    title: 'WandaVision',
+    releaseYear: 2021,
+    runtimeMinutes: 39,
+    episodeCount: 9,
+    prerequisites: ['Avengers: Endgame'],
+  },
+  {
+    kind: 'series',
+    title: 'Loki',
+    releaseYear: 2021,
+    runtimeMinutes: 51,
+    episodeCount: 6,
+    prerequisites: ['Avengers: Endgame'],
+  },
+  {
+    title: 'Doctor Strange in the Multiverse of Madness',
+    releaseYear: 2022,
+    runtimeMinutes: 126,
+    prerequisites: ['WandaVision'],
   },
 ];
 
