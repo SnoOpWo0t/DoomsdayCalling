@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { migrate } from './db/migrate.js';
 import { createPool } from './db/pool.js';
+import { seed } from './db/seed.js';
 
 try {
   process.loadEnvFile();
@@ -13,6 +14,7 @@ const config = loadConfig();
 const db = createPool(config.DATABASE_URL);
 
 await migrate(db);
+if (config.SEED_ON_START) await seed(db);
 
 const app = createApp({ db, config });
 const server = app.listen(config.PORT, () => {
