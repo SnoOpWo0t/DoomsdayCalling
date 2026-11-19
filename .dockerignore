@@ -1,0 +1,15 @@
+# Keep build contexts small and free of local state and secrets.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.playwright-mcp
+.claude
+.dist
+*.pdf
+*.log

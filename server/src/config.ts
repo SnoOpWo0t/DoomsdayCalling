@@ -13,6 +13,11 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean),
     ),
+  /** Load the brief's sample data on startup when the tables are empty (Docker demo). */
+  SEED_ON_START: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   TMDB_API_KEY: z
     .string()
     .optional()
