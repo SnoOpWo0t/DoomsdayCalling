@@ -1,4 +1,4 @@
-# Doomsday Ready
+# Doomsday Calling
 
 Plan your MCU rewatch before **Avengers: Doomsday**, then book an opening-night watch party.
 
