@@ -9,6 +9,7 @@ import type {
   MovieInput,
   MoviePatch,
   RewatchPlan,
+  TitleDetails,
   TmdbMovie,
   TmdbMovieDetails,
 } from './types';
@@ -17,6 +18,7 @@ import type {
 export const queryKeys = {
   movies: ['movies'] as const,
   rewatchPlan: (movieId: number) => ['movies', movieId, 'rewatch-order'] as const,
+  titleDetails: (movieId: number) => ['movies', movieId, 'details'] as const,
   cinemas: ['cinemas'] as const,
   bookingQuote: (cinemaId: number, groupSize: number) =>
     ['cinemas', cinemaId, 'booking', groupSize] as const,
@@ -59,6 +61,8 @@ export function useUpdateMovie() {
 
 const isRewatchPlanKey = (key: readonly unknown[]) =>
   key.length === 3 && key[0] === 'movies' && key[2] === 'rewatch-order';
+const isDetailsKey = (key: readonly unknown[]) =>
+  key.length === 3 && key[0] === 'movies' && key[2] === 'details';
 
 /**
  * Toggles `watched` optimistically so the tick, progress bar and remaining
@@ -78,6 +82,9 @@ export function useToggleWatched() {
       const previousPlans = queryClient.getQueriesData<RewatchPlan>({
         predicate: (query) => isRewatchPlanKey(query.queryKey),
       });
+      const previousDetails = queryClient.getQueriesData<TitleDetails>({
+        predicate: (query) => isDetailsKey(query.queryKey),
+      });
 
       queryClient.setQueryData<Movie[]>(queryKeys.movies, (movies) =>
         movies?.map((movie) => (movie.id === id ? { ...movie, watched } : movie)),
@@ -85,13 +92,24 @@ export function useToggleWatched() {
       for (const [key, plan] of previousPlans) {
         if (plan) queryClient.setQueryData(key, applyWatched(plan, id, watched));
       }
+      const tick = (movie: Movie) => (movie.id === id ? { ...movie, watched } : movie);
+      for (const [key, details] of previousDetails) {
+        if (!details) continue;
+        queryClient.setQueryData<TitleDetails>(key, {
+          ...details,
+          movie: tick(details.movie),
+          prerequisites: details.prerequisites.map(tick),
+          dependents: details.dependents.map(tick),
+        });
+      }
 
-      return { previousList, previousPlans };
+      return { previousList, previousPlans, previousDetails };
     },
     onError: (_error, _variables, context) => {
       if (!context) return;
       queryClient.setQueryData(queryKeys.movies, context.previousList);
       for (const [key, plan] of context.previousPlans) queryClient.setQueryData(key, plan);
+      for (const [key, details] of context.previousDetails) queryClient.setQueryData(key, details);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.movies }),
   });
@@ -124,6 +142,14 @@ export function useRewatchPlan(movieId: number | undefined) {
     queryFn: () => api.get<RewatchPlan>(`/movies/${movieId}/rewatch-order`),
     enabled: movieId !== undefined,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useTitleDetails(movieId: number | undefined) {
+  return useQuery({
+    queryKey: queryKeys.titleDetails(movieId ?? 0),
+    queryFn: () => api.get<TitleDetails>(`/movies/${movieId}/details`),
+    enabled: movieId !== undefined,
   });
 }
 
