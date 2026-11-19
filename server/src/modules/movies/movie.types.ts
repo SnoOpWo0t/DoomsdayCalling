@@ -14,3 +14,13 @@ export interface MovieSummary {
   id: number;
   title: string;
 }
+
+export interface RewatchPlan {
+  target: Movie;
+  /** Movies to watch before the target, each after its own prerequisites. */
+  movies: Movie[];
+  totalCount: number;
+  watchedCount: number;
+  /** Total runtime of the movies in `movies` that are not yet watched. */
+  unwatchedRuntimeMinutes: number;
+}

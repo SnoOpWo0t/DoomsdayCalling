@@ -19,6 +19,11 @@ export function movieRoutes(movies: MovieService): Router {
     res.json(await movies.get(id));
   });
 
+  router.get('/:id/rewatch-order', async (req, res) => {
+    const { id } = movieIdParam.parse(req.params);
+    res.json(await movies.rewatchPlan(id));
+  });
+
   router.patch('/:id', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
     const patch = updateMovieSchema.parse(req.body);

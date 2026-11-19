@@ -1,10 +1,10 @@
 import { withTransaction, type Db, type Queryable } from '../../db/pool.js';
 import { AppError, ErrorCode, notFound } from '../../lib/errors.js';
 import { isUniqueViolation } from '../../lib/pg-errors.js';
-import { findCycle } from './dependency-graph.js';
+import { findCycle, rewatchOrder } from './dependency-graph.js';
 import * as repo from './movie.repository.js';
 import type { CreateMovieInput, UpdateMovieInput } from './movie.schemas.js';
-import type { Movie } from './movie.types.js';
+import type { Movie, RewatchPlan } from './movie.types.js';
 
 export function createMovieService(db: Db) {
   return {
@@ -51,6 +51,37 @@ export function createMovieService(db: Db) {
 
         return (await repo.findMovieById(tx, id))!;
       });
+    },
+
+    /**
+     * Builds the rewatch plan for `targetId`. The whole catalogue is loaded and
+     * ordered in application code (see `rewatchOrder`), which keeps the
+     * algorithm hand-written and database-agnostic.
+     */
+    async rewatchPlan(targetId: number): Promise<RewatchPlan> {
+      const all = await repo.listMovies(db);
+      const byId = new Map(all.map((movie) => [movie.id, movie]));
+
+      const target = byId.get(targetId);
+      if (!target) throw notFound('Movie', targetId);
+
+      const graph = new Map(all.map((movie) => [movie.id, movie.prerequisiteIds]));
+      const byReleaseThenTitle = (a: number, b: number) => {
+        const left = byId.get(a)!;
+        const right = byId.get(b)!;
+        return left.releaseYear - right.releaseYear || left.title.localeCompare(right.title);
+      };
+
+      const movies = rewatchOrder(graph, targetId, byReleaseThenTitle).map((id) => byId.get(id)!);
+      const unwatched = movies.filter((movie) => !movie.watched);
+
+      return {
+        target,
+        movies,
+        totalCount: movies.length,
+        watchedCount: movies.length - unwatched.length,
+        unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + movie.runtimeMinutes, 0),
+      };
     },
 
     async remove(id: number): Promise<void> {
