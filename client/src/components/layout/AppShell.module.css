@@ -92,6 +92,7 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -173,6 +174,9 @@
   .navLink {
     flex: 1;
     justify-content: center;
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+    font-size: var(--text-xs);
   }
 
   .main {
@@ -180,7 +184,7 @@
   }
 }
 
-@media (max-width: 26rem) {
+@media (max-width: 22rem) {
   .navLabel {
     display: none;
   }
