@@ -34,7 +34,7 @@ export function useTestApp(): TestContext {
 
   const db = createPool(TEST_DATABASE_URL);
   context.db = db;
-  context.app = createApp({ db, config: { CORS_ORIGIN: ['*'], TMDB_API_TOKEN: undefined } });
+  context.app = createApp({ db, config: { CORS_ORIGIN: ['*'], TMDB_API_KEY: undefined } });
 
   let migrated = false;
 

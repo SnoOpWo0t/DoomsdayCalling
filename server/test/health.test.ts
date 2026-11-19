@@ -4,7 +4,7 @@ import { createApp } from '../src/app.js';
 import type { Db } from '../src/db/pool.js';
 
 const fakeDb = { query: async () => ({ rows: [] }) } as unknown as Db;
-const app = createApp({ db: fakeDb, config: { CORS_ORIGIN: ['*'], TMDB_API_TOKEN: undefined } });
+const app = createApp({ db: fakeDb, config: { CORS_ORIGIN: ['*'], TMDB_API_KEY: undefined } });
 
 describe('GET /api/health', () => {
   it('reports ok when the database responds', async () => {
