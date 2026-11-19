@@ -1,0 +1,17 @@
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.previewLabel {
+  font-weight: 600;
+}
