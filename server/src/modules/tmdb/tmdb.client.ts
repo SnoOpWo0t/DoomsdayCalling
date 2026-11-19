@@ -16,6 +16,10 @@ export interface TmdbMovie {
 
 export interface TmdbMovieDetails extends TmdbMovie {
   runtimeMinutes: number | null;
+  genres: string[];
+  /** Average user score out of 10, or null when there are too few votes. */
+  rating: number | null;
+  backdropPath: string | null;
 }
 
 export interface TmdbClient {
@@ -30,6 +34,10 @@ interface RawMovie {
   poster_path?: string | null;
   overview?: string;
   runtime?: number | null;
+  genres?: Array<{ name: string }>;
+  vote_average?: number;
+  vote_count?: number;
+  backdrop_path?: string | null;
 }
 
 export interface TmdbClientOptions {
@@ -108,6 +116,13 @@ export function createTmdbClient({
       return {
         ...toMovie(raw),
         runtimeMinutes: raw.runtime && raw.runtime > 0 ? raw.runtime : null,
+        genres: (raw.genres ?? []).map((genre) => genre.name),
+        rating:
+          raw.vote_average && (raw.vote_count ?? 0) >= 10
+            ? Math.round(raw.vote_average * 10) / 10
+            : null,
+        backdropPath:
+          raw.backdrop_path && POSTER_PATH.test(raw.backdrop_path) ? raw.backdrop_path : null,
       };
     },
   };
