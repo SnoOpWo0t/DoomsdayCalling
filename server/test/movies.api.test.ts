@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
+import { seedSampleMovies } from './helpers/fixtures.js';
 import { describeWithDb, useTestApp } from './helpers/test-app.js';
 
 describeWithDb('Movies API', () => {
@@ -9,30 +10,6 @@ describeWithDb('Movies API', () => {
     request(ctx.app).post('/api/movies').send(body);
 
   const ironMan = { title: 'Iron Man', releaseYear: 2008, runtimeMinutes: 126 };
-
-  /** Builds the brief's sample graph and returns title -> id. */
-  async function seedBriefData(): Promise<Record<string, number>> {
-    const ids: Record<string, number> = {};
-    const add = async (title: string, releaseYear: number, prerequisites: string[] = []) => {
-      const res = await createMovie({
-        title,
-        releaseYear,
-        runtimeMinutes: 130,
-        prerequisiteIds: prerequisites.map((name) => ids[name]),
-      });
-      expect(res.status).toBe(201);
-      ids[title] = res.body.id;
-    };
-    await add('Iron Man', 2008);
-    await add('Captain America: The First Avenger', 2011);
-    await add('The Avengers', 2012, ['Iron Man', 'Captain America: The First Avenger']);
-    await add('Captain America: Civil War', 2016, ['The Avengers']);
-    await add('Thor: Ragnarok', 2017);
-    await add('Avengers: Infinity War', 2018, ['Captain America: Civil War', 'Thor: Ragnarok']);
-    await add('Avengers: Endgame', 2019, ['Avengers: Infinity War']);
-    await add('Avengers: Doomsday', 2026, ['Avengers: Endgame']);
-    return ids;
-  }
 
   describe('POST /api/movies', () => {
     it('creates a movie with watched defaulting to false', async () => {
@@ -111,7 +88,7 @@ describeWithDb('Movies API', () => {
     });
 
     it('replaces the prerequisite list', async () => {
-      const ids = await seedBriefData();
+      const ids = await seedSampleMovies(ctx.app);
       const res = await request(ctx.app)
         .patch(`/api/movies/${ids['Avengers: Infinity War']}`)
         .send({ prerequisiteIds: [ids['Thor: Ragnarok']] });
@@ -120,7 +97,7 @@ describeWithDb('Movies API', () => {
     });
 
     it('returns 409 CIRCULAR_DEPENDENCY when Endgame becomes a prerequisite of Iron Man', async () => {
-      const ids = await seedBriefData();
+      const ids = await seedSampleMovies(ctx.app);
       const res = await request(ctx.app)
         .patch(`/api/movies/${ids['Iron Man']}`)
         .send({ prerequisiteIds: [ids['Avengers: Endgame']] });
@@ -151,7 +128,7 @@ describeWithDb('Movies API', () => {
     });
 
     it('does not apply other fields when the prerequisite change is rejected', async () => {
-      const ids = await seedBriefData();
+      const ids = await seedSampleMovies(ctx.app);
       await request(ctx.app)
         .patch(`/api/movies/${ids['Iron Man']}`)
         .send({ watched: true, prerequisiteIds: [ids['Avengers: Doomsday']] });
@@ -189,7 +166,7 @@ describeWithDb('Movies API', () => {
 
   describe('DELETE /api/movies/:id', () => {
     it('deletes a movie and detaches it from dependents', async () => {
-      const ids = await seedBriefData();
+      const ids = await seedSampleMovies(ctx.app);
       const del = await request(ctx.app).delete(`/api/movies/${ids['The Avengers']}`);
       expect(del.status).toBe(204);
 
