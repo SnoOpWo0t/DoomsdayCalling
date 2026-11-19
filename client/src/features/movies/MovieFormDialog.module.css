@@ -29,6 +29,12 @@
   gap: var(--space-4);
 }
 
+.rowThree {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
 .checkbox {
   display: flex;
   align-items: center;
@@ -45,7 +51,8 @@
 }
 
 @media (max-width: 30rem) {
-  .row {
+  .row,
+  .rowThree {
     grid-template-columns: 1fr;
   }
 }

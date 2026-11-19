@@ -5,7 +5,7 @@ import { daysUntil, pluralize } from '../../lib/format';
 import styles from './AppShell.module.css';
 
 const NAV_ITEMS: Array<{ to: string; label: string; icon: LucideIcon }> = [
-  { to: '/', label: 'Movies', icon: Film },
+  { to: '/', label: 'Movies & series', icon: Film },
   { to: '/plan', label: 'Rewatch plan', icon: ListOrdered },
   { to: '/booking', label: 'Booking', icon: Ticket },
 ];

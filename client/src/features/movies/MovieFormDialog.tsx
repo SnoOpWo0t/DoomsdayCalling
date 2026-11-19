@@ -2,12 +2,13 @@ import { Link2Off, Save } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { ApiError } from '../../api/client';
 import { useCreateMovie, useTmdbStatus, useUpdateMovie } from '../../api/queries';
-import type { Movie, TmdbMovieDetails } from '../../api/types';
+import type { Movie, TitleKind, TmdbMovieDetails } from '../../api/types';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { Dialog } from '../../components/ui/Dialog';
 import { TextField } from '../../components/ui/Field';
 import { Poster } from '../../components/ui/Poster';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { LIMITS } from '../../lib/constants';
 import { CycleAlert } from './CycleAlert';
 import {
@@ -85,11 +86,11 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
     <Dialog
       open
       onClose={onClose}
-      title={isEdit ? 'Edit movie' : 'Add a movie'}
+      title={isEdit ? `Edit ${movie.kind}` : 'Add to catalogue'}
       description={
         isEdit
-          ? 'Changing prerequisites updates every rewatch plan that includes this movie.'
-          : 'Add a film to your catalogue and link what should be watched before it.'
+          ? 'Changing prerequisites updates every rewatch plan that includes this title.'
+          : 'Add a movie or series and link what should be watched before it.'
       }
       footer={
         <>
@@ -97,13 +98,24 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
             Cancel
           </Button>
           <Button variant="primary" type="submit" form="movie-form" icon={Save} loading={saving}>
-            {isEdit ? 'Save changes' : 'Add movie'}
+            {isEdit ? 'Save changes' : `Add ${values.kind}`}
           </Button>
         </>
       }
     >
       <form id="movie-form" className={styles.form} onSubmit={handleSubmit} noValidate>
-        {tmdbStatus.data?.enabled && <TmdbLookup onPick={applyTmdb} />}
+        <SegmentedControl<TitleKind>
+          label="Type"
+          value={values.kind}
+          onChange={(kind) => set('kind', kind)}
+          options={[
+            { value: 'movie', label: 'Movie' },
+            { value: 'series', label: 'Series' },
+          ]}
+        />
+
+        {/* TMDb lookup searches films, so it is only offered for movies. */}
+        {tmdbStatus.data?.enabled && values.kind === 'movie' && <TmdbLookup onPick={applyTmdb} />}
 
         <div className={styles.identity}>
           <Poster title={values.title || '?'} posterPath={values.posterPath} size="sm" />
@@ -135,7 +147,7 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
           </p>
         )}
 
-        <div className={styles.row}>
+        <div className={values.kind === 'series' ? styles.rowThree : styles.row}>
           <TextField
             label="Release year"
             inputMode="numeric"
@@ -145,14 +157,26 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
             placeholder="2012"
             required
           />
+          {values.kind === 'series' && (
+            <TextField
+              label="Episodes"
+              inputMode="numeric"
+              value={values.episodeCount}
+              onChange={(event) => set('episodeCount', event.target.value)}
+              error={errors.episodeCount}
+              hint={`${LIMITS.episodes.min}-${LIMITS.episodes.max}`}
+              placeholder="9"
+              required
+            />
+          )}
           <TextField
-            label="Runtime (minutes)"
+            label={values.kind === 'series' ? 'Minutes per episode' : 'Runtime (minutes)'}
             inputMode="numeric"
             value={values.runtimeMinutes}
             onChange={(event) => set('runtimeMinutes', event.target.value)}
             error={errors.runtimeMinutes}
             hint={`${LIMITS.runtime.min}-${LIMITS.runtime.max}`}
-            placeholder="143"
+            placeholder={values.kind === 'series' ? '45' : '143'}
             required
           />
         </div>

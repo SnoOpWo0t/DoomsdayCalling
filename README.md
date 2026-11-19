@@ -1,12 +1,12 @@
 # Doomsday Calling
 
-Plan your MCU rewatch before **Avengers: Doomsday**, then book an opening-night watch party.
+Plan your MCU rewatch (movies **and** series) before **Avengers: Doomsday**, then book an opening-night watch party.
 
 A full-stack TypeScript app built for the Blinto Talent Accelerator 2027 full-stack internship assessment. It has a React client, an Express API and PostgreSQL. Both core algorithms (dependency ordering with cycle detection, and minimum-bundle booking) are hand-written with no graph or optimisation libraries.
 
 ![Rewatch plan](docs/screenshots/rewatch-plan.png)
 
-| Movies                                 | Booking                                  | Circular dependency                                                  |
+| Movies & series                        | Booking                                  | Circular dependency                                                  |
 | -------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
 | ![Movies](docs/screenshots/movies.png) | ![Booking](docs/screenshots/booking.png) | ![409 CIRCULAR_DEPENDENCY](docs/screenshots/circular-dependency.png) |
 
@@ -71,6 +71,7 @@ The app is fully functional without it. To enable movie search, posters and runt
 ### 1. Movies and rewatch order
 
 - Create, list, update and delete movies: title (unique), release year, runtime (1–300 min), prerequisites, watched.
+- **Series too.** A title can be a `movie` or a `series` (WandaVision, Loki). Both live in the same catalogue and prerequisite graph, so a movie can require a series and the other way round. For a series, `runtimeMinutes` is the episode length, and its watch time is episodes × runtime.
 - Any change that would make a movie depend on itself, directly or through other movies, is rejected with **`409 CIRCULAR_DEPENDENCY`**. The response includes the loop (`Iron Man → Avengers: Endgame → … → Iron Man`), and the UI draws it.
 - `GET /api/movies/:id/rewatch-order` returns every movie to watch first, each once and after its own prerequisites. It also returns the watched count and the remaining runtime.
 
@@ -81,11 +82,11 @@ The app is fully functional without it. To enable movie search, posters and runt
 
 ### 3. Frontend (React)
 
-| View             | What you can do                                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Movies**       | Add, edit and delete movies; pick prerequisites from a searchable list; tick watched; search and filter                                             |
-| **Rewatch plan** | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`) |
-| **Booking**      | Pick a cinema and a group size; see the bundles (with a seat strip) or "Not possible". Shareable via `/booking?cinema=3&group=44`                   |
+| View                | What you can do                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Movies & series** | Add, edit and delete movies and series; pick prerequisites from a searchable list; tick watched; search and filter by type and status               |
+| **Rewatch plan**    | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`) |
+| **Booking**         | Pick a cinema and a group size; see the bundles (with a seat strip) or "Not possible". Shareable via `/booking?cinema=3&group=44`                   |
 
 Ticking watched updates the list, progress bar and remaining time instantly (optimistic update with rollback). Each view has loading, empty and error states. The UI is keyboard and screen-reader friendly, and responsive down to phone widths.
 
@@ -208,9 +209,11 @@ erDiagram
 
     MOVIES {
         int id PK
+        text kind "movie or series"
         text title UK "unique, case-insensitive"
         int release_year "1888-2100"
-        int runtime_minutes "1-300"
+        int runtime_minutes "1-300, per episode for series"
+        int episode_count "1-500, always 1 for movies"
         boolean watched "default false"
         int tmdb_id "optional"
         text poster_path "optional, TMDb file path"
@@ -238,6 +241,7 @@ erDiagram
 
 - **`movie_prerequisites`** is a self-referencing many-to-many join table. A `CHECK (movie_id <> prerequisite_id)` blocks direct self-dependency in the database. Indirect cycles are blocked by the API before anything is written.
 - **`cinema_bundle_sizes`** has one row per size. Its composite primary key keeps sizes distinct. The 1–10 sizes per cinema rule is enforced by the API.
+- **`movies`** holds both movies and series (`kind`). A `CHECK` keeps movies at exactly one episode. Keeping one table means series and movies share one prerequisite graph.
 - Deleting a movie or cinema cascades to its rows in the join tables.
 - Migrations are plain SQL in [`server/migrations`](server/migrations), applied by a small forward-only runner.
 
@@ -246,7 +250,7 @@ erDiagram
 ```
 .
 ├── server/                    Express 5 + TypeScript API
-│   ├── migrations/            001_create_movies.sql, 002_create_cinemas.sql, 003_…
+│   ├── migrations/            001_create_movies.sql … 004_add_series_support.sql
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── movies/        dependency-graph.ts (algorithms), schemas, repository, service, routes
@@ -276,13 +280,13 @@ erDiagram
 
 ## Testing
 
-**170 tests**, all run in CI on every pull request against a real Postgres service container.
+**190 tests**, all run in CI on every pull request against a real Postgres service container.
 
 | Suite              | Count | Covers                                                                                                                                                                         |
 | ------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Server unit        | 41    | Cycle detection, rewatch order (including brief examples, random graphs, 50k chains), booking DP (brief examples, greedy counterexample, brute-force cross-check), TMDb client |
-| Server integration | 66    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates                                               |
-| Client             | 63    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                               |
+| Server integration | 79    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed movie/series plans          |
+| Client             | 70    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                               |
 
 ```bash
 npm test                          # everything (integration tests need Postgres: npm run db:up)
@@ -305,6 +309,12 @@ The brief asks for unclear points to be decided and noted. These are mine:
 - On **create**, a cycle is impossible, because nothing can reference a movie before it exists. The check still runs, so every write path enforces the same rule.
 - A rejected `PATCH` changes **nothing**, including other fields in the same request.
 - Deleting a movie removes it from other movies' prerequisite lists.
+
+**Series**
+
+- The brief only describes movies. I added series because the MCU story runs through them too. To keep the brief's API intact, they reuse `/api/movies` with a `kind` field that defaults to `movie`, so every request from the brief behaves exactly as specified.
+- For a series, the 1–300 runtime rule applies to the episode length, and `episodeCount` (1–500) holds the number of episodes. Remaining watch time counts every episode.
+- The sample series (WandaVision, Loki) and Doctor Strange in the Multiverse of Madness all come after Avengers: Endgame, so the brief's expected results (for example 7 titles before Avengers: Doomsday) are unchanged. TMDb autofill is offered for movies only.
 
 **Rewatch order**
 
@@ -332,5 +342,5 @@ The brief allows AI tools if their use is disclosed. I built this project with *
 
 - **Direction and decisions were mine:** PostgreSQL as the database, TMDb as an optional (not required) integration, the visual direction, and a professional workflow of one branch and pull request per feature with CI on every PR.
 - **The AI wrote most of the code:** the two algorithms, the API, the React views, the tests and this README. It explained each algorithm and decision as it went, and asked before major choices.
-- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 170 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
+- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 190 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
 - No library solves features 1 or 2. The graph traversal and the dynamic programming are plain TypeScript in the two files linked above.

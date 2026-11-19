@@ -30,9 +30,30 @@ describe('validateMovieForm', () => {
   });
 });
 
+describe('series', () => {
+  const series: MovieFormValues = { ...valid, kind: 'series', episodeCount: '9' };
+
+  it('requires a valid episode count for a series', () => {
+    expect(validateMovieForm(series)).toEqual({});
+    expect(validateMovieForm({ ...series, episodeCount: '' }).episodeCount).toBeDefined();
+    expect(validateMovieForm({ ...series, episodeCount: '501' }).episodeCount).toBeDefined();
+  });
+
+  it('ignores the episode field for movies', () => {
+    expect(validateMovieForm({ ...valid, episodeCount: 'abc' })).toEqual({});
+    expect(toMovieInput({ ...valid, episodeCount: '9' }).episodeCount).toBe(1);
+  });
+
+  it('sends the episode count for a series', () => {
+    expect(toMovieInput(series)).toMatchObject({ kind: 'series', episodeCount: 9 });
+  });
+});
+
 describe('toMovieInput', () => {
   it('trims the title and converts numbers', () => {
     expect(toMovieInput({ ...valid, prerequisiteIds: [3, 4] })).toEqual({
+      kind: 'movie',
+      episodeCount: 1,
       title: 'Iron Man',
       releaseYear: 2008,
       runtimeMinutes: 126,

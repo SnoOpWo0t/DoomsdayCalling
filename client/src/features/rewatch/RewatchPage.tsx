@@ -41,7 +41,7 @@ export function RewatchPage() {
     <PageHeader
       eyebrow="Catch up"
       title="Rewatch plan"
-      description="Pick a target and see every film you need first, ordered so each one comes after the films it builds on."
+      description="Pick a target and see every movie and series you need first, ordered so each one comes after what it builds on."
     />
   );
 
@@ -80,10 +80,10 @@ export function RewatchPage() {
         {header}
         <StateMessage
           icon={Film}
-          title="No movies to plan"
+          title="Nothing to plan yet"
           action={
             <Link to="/" className={styles.link}>
-              Add movies first
+              Add titles first
             </Link>
           }
         >
@@ -103,14 +103,15 @@ export function RewatchPage() {
 
       <div className={styles.controls}>
         <SelectField
-          label="Target movie"
+          label="Target title"
           value={targetId}
           onChange={(event) => setParams({ target: event.target.value }, { replace: true })}
           fieldClassName={styles.select}
         >
           {options.map((movie) => (
             <option key={movie.id} value={movie.id}>
-              {movie.title} ({movie.releaseYear})
+              {movie.title} ({movie.releaseYear}
+              {movie.kind === 'series' ? ', series' : ''})
             </option>
           ))}
         </SelectField>
@@ -137,8 +138,7 @@ export function RewatchPage() {
 
           {data.totalCount === 0 ? (
             <StateMessage icon={Sparkles} title="Nothing to catch up on">
-              {data.target.title} does not build on any other movie in your catalogue. Go straight
-              in.
+              {data.target.title} does not build on anything else in your catalogue. Go straight in.
             </StateMessage>
           ) : (
             <>
@@ -153,7 +153,7 @@ export function RewatchPage() {
                     </Link>
                   }
                 >
-                  Every film before {data.target.title} is watched.
+                  Everything before {data.target.title} is watched.
                 </StateMessage>
               )}
               <PlanTimeline

@@ -29,3 +29,20 @@ export function daysUntil(to: Date, from: Date = new Date()): number {
   const end = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
   return Math.max(0, Math.round((end - start) / msPerDay));
 }
+
+interface Watchable {
+  kind: 'movie' | 'series';
+  runtimeMinutes: number;
+  episodeCount: number;
+}
+
+/** Minutes needed to watch a title in full: a movie's runtime, or every episode of a series. */
+export function watchTime(title: Pick<Watchable, 'runtimeMinutes' | 'episodeCount'>): number {
+  return title.runtimeMinutes * title.episodeCount;
+}
+
+/** "2h 06m" for a movie, "9 episodes · 5h 51m" for a series. */
+export function describeLength(title: Watchable): string {
+  if (title.kind === 'movie') return formatRuntime(title.runtimeMinutes);
+  return `${pluralize(title.episodeCount, 'episode')} · ${formatRuntime(watchTime(title))}`;
+}

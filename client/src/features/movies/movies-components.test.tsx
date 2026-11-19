@@ -10,9 +10,11 @@ Element.prototype.scrollIntoView = vi.fn();
 
 const movie = (id: number, title: string, releaseYear: number): Movie => ({
   id,
+  kind: 'movie',
   title,
   releaseYear,
   runtimeMinutes: 120,
+  episodeCount: 1,
   watched: false,
   tmdbId: null,
   posterPath: null,
@@ -78,6 +80,6 @@ describe('PrerequisitePicker', () => {
 
   it('explains when there is nothing to pick', () => {
     render(<PrerequisitePicker movies={[]} selectedIds={[]} onChange={() => {}} />);
-    expect(screen.getByText(/Add more movies/)).toBeInTheDocument();
+    expect(screen.getByText(/Add more titles/)).toBeInTheDocument();
   });
 });

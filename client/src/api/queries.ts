@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { watchTime } from '../lib/format';
 import { api } from './client';
 import type {
   BookingQuote,
@@ -105,7 +106,7 @@ export function applyWatched(plan: RewatchPlan, id: number, watched: boolean): R
     target: plan.target.id === id ? { ...plan.target, watched } : plan.target,
     movies,
     watchedCount: movies.length - unwatched.length,
-    unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + movie.runtimeMinutes, 0),
+    unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + watchTime(movie), 0),
   };
 }
 
