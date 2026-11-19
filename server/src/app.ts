@@ -3,6 +3,8 @@ import express, { type Express } from 'express';
 import type { Config } from './config.js';
 import type { Db } from './db/pool.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { movieRoutes } from './modules/movies/movie.routes.js';
+import { createMovieService } from './modules/movies/movie.service.js';
 
 export interface AppDependencies {
   db: Db;
@@ -26,6 +28,8 @@ export function createApp({ db, config }: AppDependencies): Express {
     await db.query('SELECT 1');
     res.json({ status: 'ok' });
   });
+
+  api.use('/movies', movieRoutes(createMovieService(db)));
 
   app.use('/api', api);
 
