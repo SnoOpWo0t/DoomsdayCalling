@@ -100,3 +100,8 @@ p {
   white-space: nowrap;
   border: 0;
 }
+
+/* Keep the page behind an open modal from scrolling. */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
