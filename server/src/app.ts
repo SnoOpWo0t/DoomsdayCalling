@@ -7,17 +7,21 @@ import { cinemaRoutes } from './modules/cinemas/cinema.routes.js';
 import { createCinemaService } from './modules/cinemas/cinema.service.js';
 import { movieRoutes } from './modules/movies/movie.routes.js';
 import { createMovieService } from './modules/movies/movie.service.js';
+import { createTmdbClient, type TmdbClient } from './modules/tmdb/tmdb.client.js';
+import { tmdbRoutes } from './modules/tmdb/tmdb.routes.js';
 
 export interface AppDependencies {
   db: Db;
-  config: Pick<Config, 'CORS_ORIGIN' | 'TMDB_API_TOKEN'>;
+  config: Pick<Config, 'CORS_ORIGIN' | 'TMDB_API_KEY'>;
+  /** Override the TMDb client (tests). Defaults to a real client when a key is configured. */
+  tmdb?: TmdbClient;
 }
 
 /**
  * Builds the Express application from its dependencies. Kept separate from
  * `index.ts` (which binds a port) so tests can create isolated instances.
  */
-export function createApp({ db, config }: AppDependencies): Express {
+export function createApp({ db, config, tmdb }: AppDependencies): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -33,6 +37,10 @@ export function createApp({ db, config }: AppDependencies): Express {
 
   api.use('/movies', movieRoutes(createMovieService(db)));
   api.use('/cinemas', cinemaRoutes(createCinemaService(db)));
+
+  const tmdbClient =
+    tmdb ?? (config.TMDB_API_KEY ? createTmdbClient({ apiKey: config.TMDB_API_KEY }) : undefined);
+  api.use('/tmdb', tmdbRoutes(tmdbClient));
 
   app.use('/api', api);
 

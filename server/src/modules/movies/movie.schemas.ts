@@ -23,6 +23,14 @@ const runtimeMinutes = z
 
 const watched = z.boolean({ error: 'Watched must be true or false.' });
 
+const tmdbId = z.number().int().positive('TMDb id must be a positive integer.').nullable();
+
+/** Only TMDb-style file paths are accepted, so arbitrary URLs can never be injected. */
+const posterPath = z
+  .string()
+  .regex(/^\/[A-Za-z0-9_-]+\.(jpg|jpeg|png)$/, 'Poster path must look like "/abc123.jpg".')
+  .nullable();
+
 /** Duplicate ids are harmless, so they are removed instead of rejected. */
 const prerequisiteIds = z
   .array(z.number().int().positive(), { error: 'Prerequisites must be a list of movie ids.' })
@@ -38,6 +46,8 @@ export const createMovieSchema = z.strictObject({
   releaseYear,
   runtimeMinutes,
   watched: watched.default(false),
+  tmdbId: tmdbId.default(null),
+  posterPath: posterPath.default(null),
   prerequisiteIds: prerequisiteIds.default([]),
 });
 
@@ -47,6 +57,8 @@ export const updateMovieSchema = z
     releaseYear: releaseYear.optional(),
     runtimeMinutes: runtimeMinutes.optional(),
     watched: watched.optional(),
+    tmdbId: tmdbId.optional(),
+    posterPath: posterPath.optional(),
     prerequisiteIds: prerequisiteIds.optional(),
   })
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {

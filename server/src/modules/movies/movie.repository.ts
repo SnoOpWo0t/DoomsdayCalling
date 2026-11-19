@@ -11,6 +11,8 @@ const SELECT_MOVIE = `
          m.release_year    AS "releaseYear",
          m.runtime_minutes AS "runtimeMinutes",
          m.watched,
+         m.tmdb_id         AS "tmdbId",
+         m.poster_path     AS "posterPath",
          COALESCE(
            (SELECT array_agg(p.prerequisite_id ORDER BY p.prerequisite_id)
               FROM movie_prerequisites p
@@ -55,13 +57,23 @@ export async function findSummaries(
 
 export async function insertMovie(
   db: Queryable,
-  movie: Pick<Movie, 'title' | 'releaseYear' | 'runtimeMinutes' | 'watched'>,
+  movie: Pick<
+    Movie,
+    'title' | 'releaseYear' | 'runtimeMinutes' | 'watched' | 'tmdbId' | 'posterPath'
+  >,
 ): Promise<number> {
   const { rows } = await db.query<{ id: number }>(
-    `INSERT INTO movies (title, release_year, runtime_minutes, watched)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO movies (title, release_year, runtime_minutes, watched, tmdb_id, poster_path)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [movie.title, movie.releaseYear, movie.runtimeMinutes, movie.watched],
+    [
+      movie.title,
+      movie.releaseYear,
+      movie.runtimeMinutes,
+      movie.watched,
+      movie.tmdbId,
+      movie.posterPath,
+    ],
   );
   return rows[0]!.id;
 }
@@ -72,6 +84,8 @@ const UPDATABLE_COLUMNS = {
   releaseYear: 'release_year',
   runtimeMinutes: 'runtime_minutes',
   watched: 'watched',
+  tmdbId: 'tmdb_id',
+  posterPath: 'poster_path',
 } as const;
 
 export type MovieFieldUpdate = Partial<Pick<Movie, keyof typeof UPDATABLE_COLUMNS>>;

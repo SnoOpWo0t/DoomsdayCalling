@@ -13,7 +13,7 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean),
     ),
-  TMDB_API_TOKEN: z
+  TMDB_API_KEY: z
     .string()
     .optional()
     .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),

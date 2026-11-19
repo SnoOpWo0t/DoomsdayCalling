@@ -10,6 +10,7 @@ export const ErrorCode = {
   UNKNOWN_PREREQUISITE: 'UNKNOWN_PREREQUISITE',
   CIRCULAR_DEPENDENCY: 'CIRCULAR_DEPENDENCY',
   EXTERNAL_SERVICE_UNAVAILABLE: 'EXTERNAL_SERVICE_UNAVAILABLE',
+  TMDB_NOT_CONFIGURED: 'TMDB_NOT_CONFIGURED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
@@ -21,8 +22,9 @@ export class AppError extends Error {
     public readonly code: ErrorCode,
     message: string,
     public readonly details?: unknown,
+    cause?: unknown,
   ) {
-    super(message);
+    super(message, cause === undefined ? undefined : { cause });
     this.name = 'AppError';
   }
 }
