@@ -56,9 +56,14 @@ export function useUpdateMovie() {
   });
 }
 
+const isRewatchPlanKey = (key: readonly unknown[]) =>
+  key.length === 3 && key[0] === 'movies' && key[2] === 'rewatch-order';
+
 /**
- * Toggles `watched` optimistically so the tick responds instantly; the list
- * is rolled back if the request fails.
+ * Toggles `watched` optimistically so the tick, progress bar and remaining
+ * time all respond instantly, in the movie list and in every cached rewatch
+ * plan. Everything is rolled back if the request fails, and refetched from
+ * the server once it settles.
  */
 export function useToggleWatched() {
   const queryClient = useQueryClient();
@@ -67,17 +72,41 @@ export function useToggleWatched() {
       api.patch<Movie>(`/movies/${id}`, { watched }),
     onMutate: async ({ id, watched }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.movies });
-      const previous = queryClient.getQueryData<Movie[]>(queryKeys.movies);
+
+      const previousList = queryClient.getQueryData<Movie[]>(queryKeys.movies);
+      const previousPlans = queryClient.getQueriesData<RewatchPlan>({
+        predicate: (query) => isRewatchPlanKey(query.queryKey),
+      });
+
       queryClient.setQueryData<Movie[]>(queryKeys.movies, (movies) =>
         movies?.map((movie) => (movie.id === id ? { ...movie, watched } : movie)),
       );
-      return { previous };
+      for (const [key, plan] of previousPlans) {
+        if (plan) queryClient.setQueryData(key, applyWatched(plan, id, watched));
+      }
+
+      return { previousList, previousPlans };
     },
     onError: (_error, _variables, context) => {
-      if (context?.previous) queryClient.setQueryData(queryKeys.movies, context.previous);
+      if (!context) return;
+      queryClient.setQueryData(queryKeys.movies, context.previousList);
+      for (const [key, plan] of context.previousPlans) queryClient.setQueryData(key, plan);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.movies }),
   });
+}
+
+/** Returns `plan` as it will look once movie `id` has the given watched state. */
+export function applyWatched(plan: RewatchPlan, id: number, watched: boolean): RewatchPlan {
+  const movies = plan.movies.map((movie) => (movie.id === id ? { ...movie, watched } : movie));
+  const unwatched = movies.filter((movie) => !movie.watched);
+  return {
+    ...plan,
+    target: plan.target.id === id ? { ...plan.target, watched } : plan.target,
+    movies,
+    watchedCount: movies.length - unwatched.length,
+    unwatchedRuntimeMinutes: unwatched.reduce((sum, movie) => sum + movie.runtimeMinutes, 0),
+  };
 }
 
 export function useDeleteMovie() {
