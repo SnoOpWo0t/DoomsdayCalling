@@ -1,0 +1,170 @@
+.timeline {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* The rail connecting step numbers. */
+.step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  bottom: calc(-50% - var(--space-3));
+  left: calc(1.25rem - 1px);
+  width: 2px;
+  background: var(--color-border);
+}
+
+.step[data-watched='true']:not(:last-child)::before {
+  background: var(--color-accent-line);
+}
+
+.number {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-subtle);
+}
+
+.step[data-watched='true'] .number {
+  border-color: var(--color-accent-line);
+  color: var(--color-accent);
+}
+
+.step[data-next] .number {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  box-shadow: 0 0 0 4px var(--color-accent-soft);
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+.step[data-next] .card {
+  border-color: var(--color-accent-line);
+}
+
+.step[data-watched='true'] .card {
+  background: transparent;
+}
+
+.info {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-weight: 700;
+}
+
+.step[data-watched='true'] .title {
+  color: var(--color-text-muted);
+}
+
+.meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.nextBadge {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finale .number {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.finale .card {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+
+.finale .title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.bookLink {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bookLink:hover {
+  color: var(--color-accent-strong);
+}
+
+@media (max-width: 30rem) {
+  .step {
+    grid-template-columns: 2rem 1fr;
+    gap: var(--space-2);
+  }
+
+  .number {
+    width: 2rem;
+    height: 2rem;
+    font-size: var(--text-base);
+  }
+
+  .step:not(:last-child)::before {
+    left: calc(1rem - 1px);
+  }
+
+  .card {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+}
