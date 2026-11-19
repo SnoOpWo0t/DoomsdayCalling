@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysUntil, formatRuntime, pluralize, posterUrl } from './format';
+import { daysUntil, describeLength, formatRuntime, pluralize, posterUrl } from './format';
 
 describe('formatRuntime', () => {
   it.each([
@@ -40,5 +40,17 @@ describe('daysUntil', () => {
 
   it('never goes negative', () => {
     expect(daysUntil(new Date(2020, 0, 1), new Date(2026, 0, 1))).toBe(0);
+  });
+});
+
+describe('describeLength', () => {
+  it('shows a movie runtime', () => {
+    expect(describeLength({ kind: 'movie', runtimeMinutes: 126, episodeCount: 1 })).toBe('2h 06m');
+  });
+
+  it('shows episodes and total watch time for a series', () => {
+    expect(describeLength({ kind: 'series', runtimeMinutes: 39, episodeCount: 9 })).toBe(
+      '9 episodes · 5h 51m',
+    );
   });
 });

@@ -1,10 +1,17 @@
 /** Shapes returned by the Doomsday Calling API. Dates arrive as ISO strings. */
 
+export type TitleKind = 'movie' | 'series';
+
+/** A title in the catalogue: a movie or a series (the API keeps the brief's "movie" naming). */
 export interface Movie {
   id: number;
+  kind: TitleKind;
   title: string;
   releaseYear: number;
+  /** Movie runtime, or typical episode length for a series. */
   runtimeMinutes: number;
+  /** Always 1 for movies. */
+  episodeCount: number;
   watched: boolean;
   tmdbId: number | null;
   posterPath: string | null;
@@ -14,9 +21,11 @@ export interface Movie {
 }
 
 export interface MovieInput {
+  kind?: TitleKind;
   title: string;
   releaseYear: number;
   runtimeMinutes: number;
+  episodeCount?: number;
   watched?: boolean;
   tmdbId?: number | null;
   posterPath?: string | null;
