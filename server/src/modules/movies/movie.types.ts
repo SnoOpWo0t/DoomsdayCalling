@@ -18,6 +18,8 @@ export interface Movie {
   tmdbId: number | null;
   /** TMDb poster file path (e.g. "/abc.jpg"); the client chooses the image size. */
   posterPath: string | null;
+  /** Small poster found automatically (TMDb, TVMaze or Wikipedia); null until looked up. */
+  posterUrl: string | null;
   /** Ids of the movies to watch before this one. */
   prerequisiteIds: number[];
   createdAt: Date;

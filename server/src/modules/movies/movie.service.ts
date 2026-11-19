@@ -10,7 +10,12 @@ import {
 } from './movie.schemas.js';
 import type { Movie, RewatchPlan } from './movie.types.js';
 
-export function createMovieService(db: Db) {
+export interface MovieServiceHooks {
+  /** Called after a title is created or its title, year or kind changes. */
+  onIdentityChanged?: (movie: Movie) => void;
+}
+
+export function createMovieService(db: Db, hooks: MovieServiceHooks = {}) {
   return {
     list(): Promise<Movie[]> {
       return repo.listMovies(db);
@@ -35,6 +40,9 @@ export function createMovieService(db: Db) {
         await repo.replacePrerequisites(tx, id, input.prerequisiteIds);
 
         return (await repo.findMovieById(tx, id))!;
+      }).then((movie) => {
+        hooks.onIdentityChanged?.(movie);
+        return movie;
       });
     },
 
@@ -67,6 +75,12 @@ export function createMovieService(db: Db) {
         await insertOrConflict(() => repo.updateMovieFields(tx, id, fields), fields.title);
 
         return (await repo.findMovieById(tx, id))!;
+      }).then((movie) => {
+        const identityChanged = [patch.title, patch.releaseYear, patch.kind].some(
+          (value) => value !== undefined,
+        );
+        if (identityChanged) hooks.onIdentityChanged?.(movie);
+        return movie;
       });
     },
 

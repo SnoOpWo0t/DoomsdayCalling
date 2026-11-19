@@ -5,6 +5,10 @@ import type { Db } from './db/pool.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { cinemaRoutes } from './modules/cinemas/cinema.routes.js';
 import { createCinemaService } from './modules/cinemas/cinema.service.js';
+import {
+  createMetadataService,
+  type MetadataService,
+} from './modules/metadata/metadata.service.js';
 import { movieRoutes } from './modules/movies/movie.routes.js';
 import { createMovieService } from './modules/movies/movie.service.js';
 import { createTmdbClient, type TmdbClient } from './modules/tmdb/tmdb.client.js';
@@ -15,13 +19,15 @@ export interface AppDependencies {
   config: Pick<Config, 'CORS_ORIGIN' | 'TMDB_API_KEY'>;
   /** Override the TMDb client (tests). Defaults to a real client when a key is configured. */
   tmdb?: TmdbClient;
+  /** Poster and details lookups. Defaults to a disabled service (no external calls). */
+  metadata?: MetadataService;
 }
 
 /**
  * Builds the Express application from its dependencies. Kept separate from
  * `index.ts` (which binds a port) so tests can create isolated instances.
  */
-export function createApp({ db, config, tmdb }: AppDependencies): Express {
+export function createApp({ db, config, tmdb, metadata }: AppDependencies): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -35,7 +41,11 @@ export function createApp({ db, config, tmdb }: AppDependencies): Express {
     res.json({ status: 'ok' });
   });
 
-  api.use('/movies', movieRoutes(createMovieService(db)));
+  const metadataService = metadata ?? createMetadataService(db, []);
+  const movieService = createMovieService(db, {
+    onIdentityChanged: (movie) => metadataService.refreshInBackground(movie),
+  });
+  api.use('/movies', movieRoutes(movieService, metadataService));
   api.use('/cinemas', cinemaRoutes(createCinemaService(db)));
 
   const tmdbClient =

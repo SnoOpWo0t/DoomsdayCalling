@@ -34,6 +34,9 @@ describe('TMDb proxy with a client', () => {
       posterPath: null,
       overview: '',
       runtimeMinutes: 126,
+      genres: ['Action'],
+      rating: 7.7,
+      backdropPath: null,
     })),
   };
   const app = createApp({ db: fakeDb, config, tmdb });

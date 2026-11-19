@@ -18,6 +18,11 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  /** Look up posters and details from TMDb, TVMaze and Wikipedia (set false to stay offline). */
+  METADATA_LOOKUPS: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   TMDB_API_KEY: z
     .string()
     .optional()
