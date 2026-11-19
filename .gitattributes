@@ -1,2 +1,11 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalise line endings to LF in the repository and working tree.
+* text=auto eol=lf
+
+# Scripts executed inside Linux containers must always be LF.
+*.sh text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

@@ -1,0 +1,32 @@
+{
+  "name": "doomsday-ready",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plan your MCU rewatch before Avengers: Doomsday and book an opening-night watch party.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7",
+    "prettier": "^3.10.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
