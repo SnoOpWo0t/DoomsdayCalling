@@ -3,7 +3,8 @@ import { Link } from 'react-router';
 import type { Movie } from '../../api/types';
 import { Poster } from '../../components/ui/Poster';
 import { WatchToggle } from '../../components/ui/WatchToggle';
-import { formatRuntime } from '../../lib/format';
+import { SeriesBadge } from '../../components/ui/SeriesBadge';
+import { describeLength } from '../../lib/format';
 import styles from './PlanTimeline.module.css';
 
 export interface PlanTimelineProps {
@@ -19,6 +20,8 @@ export interface PlanTimelineProps {
  */
 export function PlanTimeline({ movies, target, onToggleWatched }: PlanTimelineProps) {
   const nextUpId = movies.find((movie) => !movie.watched)?.id;
+  // Only titles that have not come out yet have an opening night to book.
+  const upcoming = target.releaseYear >= new Date().getFullYear();
 
   return (
     <ol className={styles.timeline} aria-label={`Rewatch order for ${target.title}`}>
@@ -44,10 +47,11 @@ export function PlanTimeline({ movies, target, onToggleWatched }: PlanTimelinePr
               <div className={styles.info}>
                 <p className={styles.title}>
                   {movie.title}
+                  {movie.kind === 'series' && <SeriesBadge />}
                   {isNext && <span className={styles.nextBadge}>Up next</span>}
                 </p>
                 <p className={styles.meta}>
-                  {movie.releaseYear} · {formatRuntime(movie.runtimeMinutes)}
+                  {movie.releaseYear} · {describeLength(movie)}
                   {movie.watched && <span className="sr-only"> (watched)</span>}
                 </p>
               </div>
@@ -63,11 +67,15 @@ export function PlanTimeline({ movies, target, onToggleWatched }: PlanTimelinePr
         <div className={styles.card}>
           <div className={styles.info}>
             <p className={styles.title}>{target.title}</p>
-            <p className={styles.meta}>Opening night. Watch it together.</p>
+            <p className={styles.meta}>
+              {upcoming ? 'Opening night. Watch it together.' : 'Then press play on this one.'}
+            </p>
           </div>
-          <Link to="/booking" className={styles.bookLink}>
-            Book seats <ArrowRight size={16} aria-hidden />
-          </Link>
+          {upcoming && (
+            <Link to="/booking" className={styles.bookLink}>
+              Book seats <ArrowRight size={16} aria-hidden />
+            </Link>
+          )}
         </div>
       </li>
     </ol>

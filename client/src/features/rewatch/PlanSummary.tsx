@@ -2,13 +2,13 @@ import { Clock, Hourglass } from 'lucide-react';
 import type { RewatchPlan } from '../../api/types';
 import { Poster } from '../../components/ui/Poster';
 import { ProgressBar } from '../../components/ui/ProgressBar';
-import { formatRuntime } from '../../lib/format';
+import { formatRuntime, watchTime } from '../../lib/format';
 import styles from './PlanSummary.module.css';
 
 /** Target poster, progress bar and remaining watch time. */
 export function PlanSummary({ plan }: { plan: RewatchPlan }) {
   const { target, totalCount, watchedCount, unwatchedRuntimeMinutes } = plan;
-  const totalRuntime = plan.movies.reduce((sum, movie) => sum + movie.runtimeMinutes, 0);
+  const totalRuntime = plan.movies.reduce((sum, movie) => sum + watchTime(movie), 0);
   const progressLabel = `${watchedCount} of ${totalCount} watched`;
 
   return (

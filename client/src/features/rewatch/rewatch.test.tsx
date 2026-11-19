@@ -7,9 +7,11 @@ import { PlanTimeline } from './PlanTimeline';
 
 const movie = (id: number, title: string, runtimeMinutes: number, watched = false): Movie => ({
   id,
+  kind: 'movie',
   title,
   releaseYear: 2000 + id,
   runtimeMinutes,
+  episodeCount: 1,
   watched,
   tmdbId: null,
   posterPath: null,
@@ -19,7 +21,7 @@ const movie = (id: number, title: string, runtimeMinutes: number, watched = fals
 });
 
 const plan: RewatchPlan = {
-  target: movie(9, 'Avengers: Doomsday', 150),
+  target: { ...movie(9, 'Avengers: Doomsday', 150), releaseYear: 2100 },
   movies: [
     movie(1, 'Iron Man', 126, true),
     movie(2, 'The Avengers', 143),
@@ -41,6 +43,15 @@ describe('applyWatched', () => {
   it('handles un-watching', () => {
     const next = applyWatched(plan, 1, false);
     expect(next).toMatchObject({ watchedCount: 0, unwatchedRuntimeMinutes: 126 + 143 + 181 });
+  });
+
+  it('counts every episode of a series', () => {
+    const withSeries: RewatchPlan = {
+      ...plan,
+      movies: [...plan.movies, { ...movie(4, 'WandaVision', 39), kind: 'series', episodeCount: 9 }],
+      totalCount: 4,
+    };
+    expect(applyWatched(withSeries, 2, true).unwatchedRuntimeMinutes).toBe(181 + 9 * 39);
   });
 
   it('ignores movies that are not in the plan', () => {
@@ -71,6 +82,19 @@ describe('PlanTimeline', () => {
       'href',
       '/booking',
     );
+  });
+
+  it('only offers booking when the target is still to be released', () => {
+    render(
+      <MemoryRouter>
+        <PlanTimeline
+          movies={plan.movies}
+          target={{ ...plan.target, releaseYear: 2008 }}
+          onToggleWatched={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('link', { name: /Book seats/ })).not.toBeInTheDocument();
   });
 
   it('marks the first unwatched movie as up next', () => {
