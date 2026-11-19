@@ -53,3 +53,11 @@ export const SAMPLE_MOVIES: readonly SampleMovie[] = [
     prerequisites: ['Avengers: Endgame'],
   },
 ];
+
+/** Fictional cinemas whose bundle sizes match the brief's booking examples. */
+export const SAMPLE_CINEMAS: ReadonlyArray<{ name: string; bundleSizes: number[] }> = [
+  { name: 'Aurora Screens', bundleSizes: [1, 3, 4] },
+  { name: 'Lantern Picture Palace', bundleSizes: [2, 5] },
+  { name: 'Meridian Grand', bundleSizes: [6, 9, 20] },
+  { name: 'Velvet Row Cinema', bundleSizes: [4, 6] },
+];

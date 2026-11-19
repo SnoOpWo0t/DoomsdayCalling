@@ -3,6 +3,8 @@ import express, { type Express } from 'express';
 import type { Config } from './config.js';
 import type { Db } from './db/pool.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { cinemaRoutes } from './modules/cinemas/cinema.routes.js';
+import { createCinemaService } from './modules/cinemas/cinema.service.js';
 import { movieRoutes } from './modules/movies/movie.routes.js';
 import { createMovieService } from './modules/movies/movie.service.js';
 
@@ -30,6 +32,7 @@ export function createApp({ db, config }: AppDependencies): Express {
   });
 
   api.use('/movies', movieRoutes(createMovieService(db)));
+  api.use('/cinemas', cinemaRoutes(createCinemaService(db)));
 
   app.use('/api', api);
 
