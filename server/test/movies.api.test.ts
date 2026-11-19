@@ -44,6 +44,25 @@ describeWithDb('Movies API', () => {
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('stores an optional TMDb id and poster path', async () => {
+      const res = await createMovie({ ...ironMan, tmdbId: 1726, posterPath: '/abc123.jpg' });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ tmdbId: 1726, posterPath: '/abc123.jpg' });
+    });
+
+    it('defaults TMDb fields to null', async () => {
+      const res = await createMovie(ironMan);
+      expect(res.body).toMatchObject({ tmdbId: null, posterPath: null });
+    });
+
+    it.each(['https://evil.example/x.jpg', '/../../etc/passwd', 'abc.jpg', '/x.gif'])(
+      'rejects poster path %j',
+      async (posterPath) => {
+        const res = await createMovie({ ...ironMan, posterPath });
+        expect(res.status).toBe(400);
+      },
+    );
+
     it('rejects unknown prerequisite ids', async () => {
       const res = await createMovie({ ...ironMan, prerequisiteIds: [999] });
       expect(res.status).toBe(400);
