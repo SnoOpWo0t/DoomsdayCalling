@@ -4,20 +4,29 @@ import styles from './Poster.module.css';
 
 export interface PosterProps {
   title: string;
+  /** TMDb file path chosen by the user; rendered at a size-appropriate width. */
   posterPath: string | null;
-  size?: 'xs' | 'sm' | 'md';
+  /** Poster found automatically; used when there is no TMDb path. */
+  posterUrl?: string | null;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-const IMAGE_WIDTH = { xs: 'w92', sm: 'w185', md: 'w342' } as const;
+const IMAGE_WIDTH = { xs: 'w92', sm: 'w185', md: 'w342', lg: 'w500' } as const;
 
 /**
  * Movie poster with a typographic fallback, so the layout looks intentional
  * whether or not TMDb is configured.
  */
-export function Poster({ title, posterPath, size = 'sm', className }: PosterProps) {
+export function Poster({
+  title,
+  posterPath,
+  posterUrl: fallbackUrl,
+  size = 'sm',
+  className,
+}: PosterProps) {
   const [failed, setFailed] = useState(false);
-  const src = posterUrl(posterPath, IMAGE_WIDTH[size]);
+  const src = posterUrl(posterPath, IMAGE_WIDTH[size]) ?? fallbackUrl ?? null;
   const classes = [styles.poster, styles[size], className].filter(Boolean).join(' ');
 
   if (!src || failed) {

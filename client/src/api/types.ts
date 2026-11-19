@@ -15,6 +15,8 @@ export interface Movie {
   watched: boolean;
   tmdbId: number | null;
   posterPath: string | null;
+  /** Poster found automatically (TMDb, TVMaze or Wikipedia), when available. */
+  posterUrl: string | null;
   prerequisiteIds: number[];
   createdAt: string;
   updatedAt: string;
@@ -33,6 +35,27 @@ export interface MovieInput {
 }
 
 export type MoviePatch = Partial<MovieInput>;
+
+export interface TitleMetadata {
+  source: 'tmdb' | 'tvmaze' | 'wikipedia';
+  posterUrl: string | null;
+  posterLargeUrl: string | null;
+  backdropUrl: string | null;
+  overview: string | null;
+  genres: string[];
+  rating: number | null;
+  externalUrl: string | null;
+}
+
+export interface TitleDetails {
+  movie: Movie;
+  /** Titles to watch before this one. */
+  prerequisites: Movie[];
+  /** Titles that list this one as a prerequisite. */
+  dependents: Movie[];
+  /** External details; null when no source had them. */
+  metadata: TitleMetadata | null;
+}
 
 export interface RewatchPlan {
   target: Movie;

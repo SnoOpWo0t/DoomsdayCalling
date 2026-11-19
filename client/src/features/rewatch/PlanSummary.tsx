@@ -16,6 +16,7 @@ export function PlanSummary({ plan }: { plan: RewatchPlan }) {
       <Poster
         title={target.title}
         posterPath={target.posterPath}
+        posterUrl={target.posterUrl}
         size="md"
         className={styles.poster}
       />

@@ -15,6 +15,7 @@ const movie = (id: number, title: string, runtimeMinutes: number, watched = fals
   watched,
   tmdbId: null,
   posterPath: null,
+  posterUrl: null,
   prerequisiteIds: [],
   createdAt: '',
   updatedAt: '',

@@ -4,11 +4,11 @@ Plan your MCU rewatch (movies **and** series) before **Avengers: Doomsday**, the
 
 A full-stack TypeScript app built for the Blinto Talent Accelerator 2027 full-stack internship assessment. It has a React client, an Express API and PostgreSQL. Both core algorithms (dependency ordering with cycle detection, and minimum-bundle booking) are hand-written with no graph or optimisation libraries.
 
-![Rewatch plan](docs/screenshots/rewatch-plan.png)
+![Title details](docs/screenshots/title-details.png)
 
-| Movies & series                        | Booking                                  | Circular dependency                                                  |
-| -------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
-| ![Movies](docs/screenshots/movies.png) | ![Booking](docs/screenshots/booking.png) | ![409 CIRCULAR_DEPENDENCY](docs/screenshots/circular-dependency.png) |
+| Rewatch plan                                       | Movies & series                        | Booking                                  | Circular dependency                                                  |
+| -------------------------------------------------- | -------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
+| ![Rewatch plan](docs/screenshots/rewatch-plan.png) | ![Movies](docs/screenshots/movies.png) | ![Booking](docs/screenshots/booking.png) | ![409 CIRCULAR_DEPENDENCY](docs/screenshots/circular-dependency.png) |
 
 ## Contents
 
@@ -48,9 +48,13 @@ npm run dev          # API on :4000, client on :5173
 
 Open **http://localhost:5173**.
 
-### Optional: TMDb posters and autofill
+### Posters and details (no setup needed)
 
-The app is fully functional without it. To enable movie search, posters and runtime autofill, create a free key at [themoviedb.org](https://www.themoviedb.org/settings/api) and set `TMDB_API_KEY` (either the v3 API key or the v4 Read Access Token):
+Posters, overviews, genres and ratings are found automatically, **without any API key**: [TVMaze](https://www.tvmaze.com/api) for series and [Wikipedia](https://www.mediawiki.org/wiki/API:Main_page) for movies. They are cached in the database, and the server fills in missing titles in the background on startup. Set `METADATA_LOOKUPS=false` to make no external requests.
+
+### Optional: TMDb
+
+With a free [TMDb](https://www.themoviedb.org/settings/api) key you also get movie search with runtime autofill in the add form, and TMDb is used first for movie details (ratings, genres, backdrops). Set `TMDB_API_KEY` (either the v3 API key or the v4 Read Access Token):
 
 - local development: in `server/.env`
 - Docker: `TMDB_API_KEY=... docker compose up --build`, or put it in a root `.env` file
@@ -87,6 +91,8 @@ The app is fully functional without it. To enable movie search, posters and runt
 | **Movies & series** | Add, edit and delete movies and series; pick prerequisites from a searchable list; tick watched; search and filter by type and status               |
 | **Rewatch plan**    | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`) |
 | **Booking**         | Pick a cinema and a group size; see the bundles (with a seat strip) or "Not possible". Shareable via `/booking?cinema=3&group=44`                   |
+
+Clicking any title opens its **details page** (`/titles/:id`): poster with a blurred backdrop, overview, genres and rating, what to watch first and what it unlocks next, the watched toggle, edit, and a link to its rewatch plan. Posters also appear in every list.
 
 Ticking watched updates the list, progress bar and remaining time instantly (optimistic update with rollback). Each view has loading, empty and error states. The UI is keyboard and screen-reader friendly, and responsive down to phone widths.
 
@@ -127,21 +133,22 @@ Greedy ("largest bundle first") is wrong here. For sizes 1, 3, 4 and 6 seats it 
 
 All endpoints are under `/api`. Request and response bodies are JSON.
 
-| Method   | Path                                                          | Purpose                                                      |
-| -------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| `POST`   | `/movies`                                                     | Create a movie                                               |
-| `GET`    | `/movies`                                                     | List movies (by release year)                                |
-| `GET`    | `/movies/:id`                                                 | Get one movie _(extra)_                                      |
-| `PATCH`  | `/movies/:id`                                                 | Update any fields, including `watched` and `prerequisiteIds` |
-| `DELETE` | `/movies/:id`                                                 | Delete a movie _(extra)_                                     |
-| `GET`    | `/movies/:id/rewatch-order`                                   | Rewatch order (feature 1)                                    |
-| `POST`   | `/cinemas`                                                    | Create a cinema                                              |
-| `GET`    | `/cinemas`                                                    | List cinemas (by name)                                       |
-| `GET`    | `/cinemas/:id`                                                | Get one cinema _(extra)_                                     |
-| `DELETE` | `/cinemas/:id`                                                | Delete a cinema _(extra)_                                    |
-| `GET`    | `/cinemas/:id/booking?groupSize=6`                            | Booking quote (feature 2)                                    |
-| `GET`    | `/tmdb/status`, `/tmdb/search?query=`, `/tmdb/movies/:tmdbId` | Optional TMDb proxy _(extra)_                                |
-| `GET`    | `/health`                                                     | Health check _(extra)_                                       |
+| Method   | Path                                                          | Purpose                                                                |
+| -------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `POST`   | `/movies`                                                     | Create a movie                                                         |
+| `GET`    | `/movies`                                                     | List movies (by release year)                                          |
+| `GET`    | `/movies/:id`                                                 | Get one movie _(extra)_                                                |
+| `PATCH`  | `/movies/:id`                                                 | Update any fields, including `watched` and `prerequisiteIds`           |
+| `DELETE` | `/movies/:id`                                                 | Delete a movie _(extra)_                                               |
+| `GET`    | `/movies/:id/rewatch-order`                                   | Rewatch order (feature 1)                                              |
+| `GET`    | `/movies/:id/details`                                         | Title, prerequisites, titles it unlocks and external details _(extra)_ |
+| `POST`   | `/cinemas`                                                    | Create a cinema                                                        |
+| `GET`    | `/cinemas`                                                    | List cinemas (by name)                                                 |
+| `GET`    | `/cinemas/:id`                                                | Get one cinema _(extra)_                                               |
+| `DELETE` | `/cinemas/:id`                                                | Delete a cinema _(extra)_                                              |
+| `GET`    | `/cinemas/:id/booking?groupSize=6`                            | Booking quote (feature 2)                                              |
+| `GET`    | `/tmdb/status`, `/tmdb/search?query=`, `/tmdb/movies/:tmdbId` | Optional TMDb proxy _(extra)_                                          |
+| `GET`    | `/health`                                                     | Health check _(extra)_                                                 |
 
 <details>
 <summary>Examples</summary>
@@ -205,6 +212,7 @@ Every error has the shape `{ "error": { "code", "message", "details?" } }`.
 erDiagram
     MOVIES ||--o{ MOVIE_PREREQUISITES : "has prerequisite"
     MOVIES ||--o{ MOVIE_PREREQUISITES : "is prerequisite of"
+    MOVIES ||--o| TITLE_METADATA : "described by"
     CINEMAS ||--|{ CINEMA_BUNDLE_SIZES : sells
 
     MOVIES {
@@ -226,6 +234,19 @@ erDiagram
         int prerequisite_id PK, FK "watch this first"
     }
 
+    TITLE_METADATA {
+        int movie_id PK, FK
+        text source "tmdb, tvmaze or wikipedia; null = not found"
+        text poster_url
+        text poster_large_url
+        text backdrop_url
+        text overview
+        text_array genres
+        numeric rating "0-10"
+        text external_url
+        timestamptz fetched_at
+    }
+
     CINEMAS {
         int id PK
         text name UK "unique, case-insensitive"
@@ -242,6 +263,7 @@ erDiagram
 - **`movie_prerequisites`** is a self-referencing many-to-many join table. A `CHECK (movie_id <> prerequisite_id)` blocks direct self-dependency in the database. Indirect cycles are blocked by the API before anything is written.
 - **`cinema_bundle_sizes`** has one row per size. Its composite primary key keeps sizes distinct. The 1–10 sizes per cinema rule is enforced by the API.
 - **`movies`** holds both movies and series (`kind`). A `CHECK` keeps movies at exactly one episode. Keeping one table means series and movies share one prerequisite graph.
+- **`title_metadata`** caches external details, one row per title. "Not found" is cached too, but nothing is cached when every source was unreachable, so outages are retried.
 - Deleting a movie or cinema cascades to its rows in the join tables.
 - Migrations are plain SQL in [`server/migrations`](server/migrations), applied by a small forward-only runner.
 
@@ -250,11 +272,12 @@ erDiagram
 ```
 .
 ├── server/                    Express 5 + TypeScript API
-│   ├── migrations/            001_create_movies.sql … 004_add_series_support.sql
+│   ├── migrations/            001_create_movies.sql … 005_create_title_metadata.sql
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── movies/        dependency-graph.ts (algorithms), schemas, repository, service, routes
 │   │   │   ├── cinemas/       booking-quote.ts (algorithm), schemas, repository, service, routes
+│   │   │   ├── metadata/      poster and details providers (TMDb, TVMaze, Wikipedia) + cache
 │   │   │   └── tmdb/          optional TMDb client + proxy routes
 │   │   ├── db/                pool + transactions, migration runner, seed
 │   │   ├── middleware/        central error handler
@@ -264,7 +287,7 @@ erDiagram
 │   └── src/
 │       ├── api/               fetch wrapper (ApiError), types, TanStack Query hooks
 │       ├── components/        layout/ and ui/ (Button, Field, Dialog, ProgressBar, …)
-│       ├── features/          movies/, rewatch/, booking/ (one folder per view)
+│       ├── features/          movies/, title/, rewatch/, booking/ (one folder per view)
 │       └── styles/            design tokens + global styles
 ├── docker-compose.yml         db → server → client (nginx)
 └── .github/workflows/ci.yml   format, lint, typecheck, test, build, Docker build
@@ -280,13 +303,13 @@ erDiagram
 
 ## Testing
 
-**190 tests**, all run in CI on every pull request against a real Postgres service container.
+**217 tests**, all run in CI on every pull request against a real Postgres service container.
 
-| Suite              | Count | Covers                                                                                                                                                                         |
-| ------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Server unit        | 41    | Cycle detection, rewatch order (including brief examples, random graphs, 50k chains), booking DP (brief examples, greedy counterexample, brute-force cross-check), TMDb client |
-| Server integration | 79    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed movie/series plans          |
-| Client             | 70    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                               |
+| Suite              | Count | Covers                                                                                                                                                                                                          |
+| ------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server unit        | 53    | Cycle detection, rewatch order (including brief examples, random graphs, 50k chains), booking DP (brief examples, greedy counterexample, brute-force cross-check), TMDb client, metadata matching and providers |
+| Server integration | 88    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed plans, details endpoint and metadata caching                 |
+| Client             | 76    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                                                                |
 
 ```bash
 npm test                          # everything (integration tests need Postgres: npm run db:up)
@@ -332,6 +355,12 @@ The brief asks for unclear points to be decided and noted. These are mine:
 - Sample movie links come from the brief. Runtimes are theatrical runtimes; Avengers: Doomsday is unreleased, so its 150 minutes is an estimate.
 - Sample cinema names are fictional.
 
+**Posters and details**
+
+- External details are display-only. Nothing in the rewatch order or booking logic depends on them, and the details endpoint still answers (with `metadata: null`) when every source is down.
+- Wikipedia is matched by title and the article must describe a film or show, so _Iron Man_ the comic character is never used for _Iron Man_ the film. Posters are loaded directly from Wikimedia, TVMaze or TMDb; only those https hosts are accepted.
+- Requests send a generic User-Agent with no personal details.
+
 **UI**
 
 - The prerequisite picker does not pre-disable choices that would create a loop. The API is the single source of truth for that rule, and the UI explains its 409 response by drawing the loop.
@@ -342,5 +371,5 @@ The brief allows AI tools if their use is disclosed. I built this project with *
 
 - **Direction and decisions were mine:** PostgreSQL as the database, TMDb as an optional (not required) integration, the visual direction, and a professional workflow of one branch and pull request per feature with CI on every PR.
 - **The AI wrote most of the code:** the two algorithms, the API, the React views, the tests and this README. It explained each algorithm and decision as it went, and asked before major choices.
-- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 190 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
+- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 217 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
 - No library solves features 1 or 2. The graph traversal and the dynamic programming are plain TypeScript in the two files linked above.

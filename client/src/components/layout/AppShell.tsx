@@ -1,5 +1,5 @@
 import { CalendarClock, Film, ListOrdered, Ticket, type LucideIcon } from 'lucide-react';
-import { NavLink, Outlet, ScrollRestoration } from 'react-router';
+import { NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router';
 import { PREMIERE_DATE } from '../../lib/constants';
 import { daysUntil, pluralize } from '../../lib/format';
 import styles from './AppShell.module.css';
@@ -11,6 +11,8 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: LucideIcon }> = [
 ];
 
 export function AppShell() {
+  // Title details pages belong to the catalogue section.
+  const inCatalogue = useLocation().pathname.startsWith('/titles/');
   return (
     <div className={styles.shell}>
       <a href="#main" className={styles.skipLink}>
@@ -33,7 +35,9 @@ export function AppShell() {
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) =>
-                  isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
+                  isActive || (to === '/' && inCatalogue)
+                    ? `${styles.navLink} ${styles.active}`
+                    : styles.navLink
                 }
               >
                 <Icon size={16} aria-hidden />
@@ -56,8 +60,8 @@ export function AppShell() {
           <span className={styles.footerSep} aria-hidden>
             /
           </span>
-          Movie data and posters, when enabled, from TMDb. This product uses the TMDb API but is not
-          endorsed or certified by TMDb.
+          Posters and details from Wikipedia and TVMaze, or TMDb when configured. This product uses
+          the TMDb API but is not endorsed or certified by TMDb.
         </p>
       </footer>
 
