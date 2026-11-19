@@ -1,6 +1,7 @@
 import { loadConfig } from '../config.js';
 import { migrate } from './migrate.js';
 import { createPool } from './pool.js';
+import { seed } from './seed.js';
 
 try {
   process.loadEnvFile();
@@ -18,8 +19,12 @@ try {
       await migrate(db);
       console.log('Database is up to date.');
       break;
+    case 'seed':
+      await migrate(db);
+      await seed(db);
+      break;
     default:
-      console.error(`Unknown command "${command ?? ''}". Expected: migrate`);
+      console.error(`Unknown command "${command ?? ''}". Expected: migrate | seed`);
       process.exitCode = 1;
   }
 } finally {

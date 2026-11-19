@@ -78,3 +78,65 @@ function buildCyclePath(
   reversed.push(movieId);
   return reversed.reverse();
 }
+
+/**
+ * Returns every movie that must be watched before `target` (its
+ * prerequisites, their prerequisites, and so on), each exactly once, ordered
+ * so that every movie comes after all of its own prerequisites. The target
+ * itself is not included.
+ *
+ * Algorithm: depth-first search with post-order output. A movie is appended
+ * only after all of its prerequisites have been appended, which is exactly
+ * the "comes after its prerequisites" guarantee (a topological order of the
+ * target's ancestors). A `done` set ensures shared prerequisites, such as a
+ * movie reachable through two paths, are emitted once.
+ *
+ * The DFS uses an explicit stack instead of recursion, so very deep chains
+ * cannot overflow the call stack.
+ *
+ * `compare` decides the order in which sibling prerequisites are explored.
+ * Any order is valid; sorting by release date gives the most natural plan.
+ *
+ * Complexity: O(V + E) for the traversal, plus sorting each adjacency list.
+ */
+export function rewatchOrder(
+  graph: PrerequisiteGraph,
+  target: MovieId,
+  compare: (a: MovieId, b: MovieId) => number = (a, b) => a - b,
+): MovieId[] {
+  const prerequisitesOf = (id: MovieId) => [...(graph.get(id) ?? [])].sort(compare);
+
+  const order: MovieId[] = [];
+  const done = new Set<MovieId>();
+  const visiting = new Set<MovieId>([target]);
+  const stack: Array<{ id: MovieId; prerequisites: MovieId[]; next: number }> = [
+    { id: target, prerequisites: prerequisitesOf(target), next: 0 },
+  ];
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!;
+
+    if (frame.next < frame.prerequisites.length) {
+      const prerequisite = frame.prerequisites[frame.next]!;
+      frame.next += 1;
+
+      if (done.has(prerequisite)) continue;
+      if (visiting.has(prerequisite)) {
+        // Writes are guarded by findCycle, so this means the stored data is corrupt.
+        throw new Error(`Prerequisite cycle detected at movie ${prerequisite}`);
+      }
+
+      visiting.add(prerequisite);
+      stack.push({ id: prerequisite, prerequisites: prerequisitesOf(prerequisite), next: 0 });
+      continue;
+    }
+
+    // Every prerequisite of this movie is already in `order`: it can go next.
+    stack.pop();
+    visiting.delete(frame.id);
+    done.add(frame.id);
+    if (frame.id !== target) order.push(frame.id);
+  }
+
+  return order;
+}
