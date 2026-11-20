@@ -1,4 +1,5 @@
 import type { Db } from '../../db/pool.js';
+import { runInBackground } from '../../lib/background.js';
 import { findMovieById } from '../movies/movie.repository.js';
 import type { Movie } from '../movies/movie.types.js';
 import * as repo from './metadata.repository.js';
@@ -61,10 +62,12 @@ export function createMetadataService(
     /** Forgets cached details (e.g. after a rename) and fetches fresh ones in the background. */
     refreshInBackground(movie: Movie): void {
       if (providers.length === 0) return;
-      void repo
-        .clearCached(db, movie.id)
-        .then(() => service.get(movie))
-        .catch((error: Error) => log(`Metadata refresh failed: ${error.message}`));
+      runInBackground(
+        repo
+          .clearCached(db, movie.id)
+          .then(() => service.get(movie))
+          .catch((error: Error) => log(`Metadata refresh failed: ${error.message}`)),
+      );
     },
 
     /**

@@ -5,8 +5,8 @@ export type DbClient = pg.PoolClient;
 /** Anything that can run a query: the pool itself or a client inside a transaction. */
 export type Queryable = Pick<pg.Pool, 'query'>;
 
-export function createPool(connectionString: string): Db {
-  return new pg.Pool({ connectionString, max: 10 });
+export function createPool(connectionString: string, { max = 10 } = {}): Db {
+  return new pg.Pool({ connectionString, max });
 }
 
 /**

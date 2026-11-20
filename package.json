@@ -21,7 +21,8 @@
     "db:up": "docker compose up -d db",
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
-    "docker:up": "docker compose up --build"
+    "docker:up": "docker compose up --build",
+    "vercel-build": "npm run build && node server/dist/db/cli.js seed && node server/dist/db/cli.js backfill"
   },
   "devDependencies": {
     "concurrently": "^10.0.7",

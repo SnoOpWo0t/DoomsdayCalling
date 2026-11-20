@@ -16,6 +16,7 @@
     "db:seed": "tsx src/db/cli.ts seed"
   },
   "dependencies": {
+    "@vercel/functions": "^3.11.3",
     "cors": "^2.8.6",
     "express": "^5.3.0",
     "pg": "^8.23.1",

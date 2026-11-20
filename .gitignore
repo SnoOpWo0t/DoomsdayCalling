@@ -34,3 +34,6 @@ coverage/
 
 # Browser automation output
 .playwright-mcp/
+
+# Vercel CLI
+.vercel/
