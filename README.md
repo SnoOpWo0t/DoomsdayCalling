@@ -83,14 +83,15 @@ With a free [TMDb](https://www.themoviedb.org/settings/api) key you also get mov
 
 - Cinemas sell opening-night seats in 1–10 different bundle sizes of 1–500 seats.
 - `GET /api/cinemas/:id/booking?groupSize=N` returns the **fewest bundles** that add up to exactly N seats, or `possible: false`.
+- **Reserve** _(extra)_: the brief asks only for the quote. To make the page complete, a quote can be reserved under a name (`POST /api/reservations`), which returns a booking reference such as `DC-7K4Q2M`. The server recomputes the bundles itself, so a client can't reserve a combination that doesn't add up.
 
 ### 3. Frontend (React)
 
-| View                | What you can do                                                                                                                                     |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Movies & series** | Add, edit and delete movies and series; pick prerequisites from a searchable list; tick watched; search and filter by type and status               |
-| **Rewatch plan**    | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`) |
-| **Booking**         | Pick a cinema and a group size; see the bundles (with a seat strip) or "Not possible". Shareable via `/booking?cinema=3&group=44`                   |
+| View                | What you can do                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Movies & series** | Add, edit and delete movies and series; pick prerequisites from a searchable list; tick watched; search and filter by type and status                                                                                                                                                                                                                                                                  |
+| **Rewatch plan**    | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`)                                                                                                                                                                                                                                                    |
+| **Booking**         | Explains itself in three steps (pick a cinema, say how many are coming, reserve). Shows the answer as a sentence ("Buy 1 bundle of 20 seats, 2 bundles of 9 seats…"), a seat strip and a breakdown, or "Not possible" with nearby group sizes that work. Reserve under a name to get a ticket with a reference; **My reservations** lists and cancels them. Shareable via `/booking?cinema=3&group=44` |
 
 **Guest mode.** There is no login yet. Each browser gets an anonymous guest id (stored locally and sent as `X-Guest-Id`). Guests can add titles, and edit or delete **only the ones they added**. On every title they can still tick watched and change what to watch first, so the brief's circular-dependency example works in the UI. API requests without a guest id keep full access, so the brief's endpoints behave exactly as specified. Real accounts with an admin role can build on this later.
 
@@ -148,6 +149,9 @@ All endpoints are under `/api`. Request and response bodies are JSON.
 | `GET`    | `/cinemas`                                                    | List cinemas (by name)                                                 |
 | `GET`    | `/cinemas/:id`                                                | Get one cinema _(extra)_                                               |
 | `DELETE` | `/cinemas/:id`                                                | Delete a cinema _(extra)_                                              |
+| `POST`   | `/reservations`                                               | Reserve a quote: `{ cinemaId, groupSize, name }` _(extra)_             |
+| `GET`    | `/reservations`                                               | Your reservations (all of them without a guest id) _(extra)_           |
+| `DELETE` | `/reservations/:id`                                           | Cancel a reservation _(extra)_                                         |
 | `GET`    | `/cinemas/:id/booking?groupSize=6`                            | Booking quote (feature 2)                                              |
 | `GET`    | `/tmdb/status`, `/tmdb/search?query=`, `/tmdb/movies/:tmdbId` | Optional TMDb proxy _(extra)_                                          |
 | `GET`    | `/health`                                                     | Health check _(extra)_                                                 |
@@ -203,6 +207,7 @@ Every error has the shape `{ "error": { "code", "message", "details?" } }`.
 | 400    | `VALIDATION_ERROR`                   | Invalid body or query; `details` lists each field                       |
 | 400    | `UNKNOWN_PREREQUISITE`               | A prerequisite id does not exist                                        |
 | 403    | `FORBIDDEN`                          | A guest tried to edit details of, or delete, a title someone else added |
+| 422    | `BOOKING_NOT_POSSIBLE`               | Reserving a group size the cinema cannot seat exactly                   |
 | 404    | `NOT_FOUND`                          | Unknown movie, cinema or route                                          |
 | 409    | `DUPLICATE_TITLE` / `DUPLICATE_NAME` | Title or name already used (case-insensitive)                           |
 | 409    | `CIRCULAR_DEPENDENCY`                | The change would create a loop; `details.cycle` has the path            |
@@ -217,6 +222,7 @@ erDiagram
     MOVIES ||--o{ MOVIE_PREREQUISITES : "is prerequisite of"
     MOVIES ||--o| TITLE_METADATA : "described by"
     CINEMAS ||--|{ CINEMA_BUNDLE_SIZES : sells
+    CINEMAS ||--o{ RESERVATIONS : has
 
     MOVIES {
         int id PK
@@ -258,6 +264,18 @@ erDiagram
         timestamptz updated_at
     }
 
+    RESERVATIONS {
+        int id PK
+        text reference UK "e.g. DC-7K4Q2M"
+        int cinema_id FK
+        text name
+        int group_size "1-10000"
+        int total_bundles
+        jsonb bundles "snapshot of the quote"
+        text created_by "guest id, internal"
+        timestamptz created_at
+    }
+
     CINEMA_BUNDLE_SIZES {
         int cinema_id PK, FK
         int seats PK "1-500"
@@ -276,7 +294,7 @@ erDiagram
 ```
 .
 ├── server/                    Express 5 + TypeScript API
-│   ├── migrations/            001_create_movies.sql … 006_add_title_owner.sql
+│   ├── migrations/            001_create_movies.sql … 007_create_reservations.sql
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── movies/        dependency-graph.ts (algorithms), schemas, repository, service, routes
@@ -307,13 +325,13 @@ erDiagram
 
 ## Testing
 
-**225 tests**, all run in CI on every pull request against a real Postgres service container.
+**238 tests**, all run in CI on every pull request against a real Postgres service container.
 
 | Suite              | Count | Covers                                                                                                                                                                                                          |
 | ------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Server unit        | 53    | Cycle detection, rewatch order (including brief examples, random graphs, 50k chains), booking DP (brief examples, greedy counterexample, brute-force cross-check), TMDb client, metadata matching and providers |
-| Server integration | 95    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed plans, details endpoint and metadata caching                 |
-| Client             | 77    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                                                                |
+| Server integration | 105   | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed plans, details endpoint and metadata caching                 |
+| Client             | 80    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                                                                |
 
 ```bash
 npm test                          # everything (integration tests need Postgres: npm run db:up)
@@ -371,6 +389,11 @@ The brief asks for unclear points to be decided and noted. These are mine:
 - Wikipedia is matched by title and the article must describe a film or show, so _Iron Man_ the comic character is never used for _Iron Man_ the film. Posters are loaded directly from Wikimedia, TVMaze or TMDb; only those https hosts are accepted.
 - Requests send a generic User-Agent with no personal details.
 
+**Reservations**
+
+- Cinemas have no seat inventory in this app (the brief treats bundles as unlimited), so any possible quote can be reserved. The reserved bundles are stored as a snapshot, so later changes to a cinema don't alter existing reservations.
+- Every reservation is for the same night: the Avengers: Doomsday opening.
+
 **UI**
 
 - The prerequisite picker does not pre-disable choices that would create a loop. The API is the single source of truth for that rule, and the UI explains its 409 response by drawing the loop.
@@ -381,5 +404,5 @@ The brief allows AI tools if their use is disclosed. I built this project with *
 
 - **Direction and decisions were mine:** PostgreSQL as the database, TMDb as an optional (not required) integration, the visual direction, and a professional workflow of one branch and pull request per feature with CI on every PR.
 - **The AI wrote most of the code:** the two algorithms, the API, the React views, the tests and this README. It explained each algorithm and decision as it went, and asked before major choices.
-- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 225 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
+- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 238 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
 - No library solves features 1 or 2. The graph traversal and the dynamic programming are plain TypeScript in the two files linked above.
