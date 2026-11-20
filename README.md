@@ -414,7 +414,7 @@ The brief asks for unclear points to be decided and noted. These are mine:
 
 ## How I used AI
 
-The brief allows AI tools if their use is disclosed. I built this project with **Claude Code** (Anthropic's AI coding assistant) as a pair programmer:
+The brief allows AI tools if their use is disclosed. I built this project with **Claude Code** as a pair programmer:
 
 - **Direction and decisions were mine:** PostgreSQL as the database, TMDb as an optional (not required) integration, the visual direction, and a professional workflow of one branch and pull request per feature with CI on every PR.
 - **The AI wrote most of the code:** the two algorithms, the API, the React views, the tests and this README. It explained each algorithm and decision as it went, and asked before major choices.
