@@ -2,7 +2,7 @@
 
 Plan your MCU rewatch (movies **and** series) before **Avengers: Doomsday**, then book an opening-night watch party.
 
-A full-stack TypeScript app built for the Blinto Talent Accelerator 2027 full-stack internship assessment. It has a React client, an Express API and PostgreSQL. Both core algorithms (dependency ordering with cycle detection, and minimum-bundle booking) are hand-written with no graph or optimisation libraries.
+A full-stack TypeScript app. It has a React client, an Express API and PostgreSQL. Both core algorithms (dependency ordering with cycle detection, and minimum-bundle booking) are hand-written with no graph or optimisation libraries.
 
 ![Title details](docs/screenshots/title-details.png)
 
