@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { daysUntil, describeLength, formatRuntime, pluralize, posterUrl } from './format';
+import {
+  daysUntil,
+  describeBundles,
+  describeLength,
+  formatRuntime,
+  pluralize,
+  posterUrl,
+} from './format';
 
 describe('formatRuntime', () => {
   it.each([
@@ -52,5 +59,18 @@ describe('describeLength', () => {
     expect(describeLength({ kind: 'series', runtimeMinutes: 39, episodeCount: 9 })).toBe(
       '9 episodes · 5h 51m',
     );
+  });
+});
+
+describe('describeBundles', () => {
+  it('reads like a sentence', () => {
+    expect(
+      describeBundles([
+        { size: 20, count: 1 },
+        { size: 9, count: 2 },
+        { size: 6, count: 1 },
+      ]),
+    ).toBe('1 bundle of 20 seats, 2 bundles of 9 seats and 1 bundle of 6 seats');
+    expect(describeBundles([{ size: 3, count: 2 }])).toBe('2 bundles of 3 seats');
   });
 });

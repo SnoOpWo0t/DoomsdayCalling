@@ -95,6 +95,25 @@ export interface BookingQuote {
   bundles: BundlePurchase[];
 }
 
+export interface Reservation {
+  id: number;
+  /** Short booking reference, e.g. "DC-7K4Q2M". */
+  reference: string;
+  name: string;
+  cinema: { id: number; name: string };
+  groupSize: number;
+  totalBundles: number;
+  bundles: BundlePurchase[];
+  canCancel: boolean;
+  createdAt: string;
+}
+
+export interface ReservationInput {
+  cinemaId: number;
+  groupSize: number;
+  name: string;
+}
+
 export interface TmdbMovie {
   tmdbId: number;
   title: string;

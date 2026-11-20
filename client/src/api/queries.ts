@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { watchTime } from '../lib/format';
 import { api } from './client';
 import type {
@@ -7,6 +13,8 @@ import type {
   CinemaInput,
   Movie,
   MovieInput,
+  Reservation,
+  ReservationInput,
   MoviePatch,
   RewatchPlan,
   TitleDetails,
@@ -22,6 +30,7 @@ export const queryKeys = {
   cinemas: ['cinemas'] as const,
   bookingQuote: (cinemaId: number, groupSize: number) =>
     ['cinemas', cinemaId, 'booking', groupSize] as const,
+  reservations: ['reservations'] as const,
   tmdbStatus: ['tmdb', 'status'] as const,
   tmdbSearch: (query: string) => ['tmdb', 'search', query] as const,
 };
@@ -181,6 +190,59 @@ export function useBookingQuote(cinemaId: number | undefined, groupSize: number 
     queryFn: () => api.get<BookingQuote>(`/cinemas/${cinemaId}/booking?groupSize=${groupSize}`),
     enabled: cinemaId !== undefined && groupSize !== undefined,
     staleTime: Infinity, // A quote for the same cinema and group never changes.
+  });
+}
+
+/**
+ * Quotes for group sizes near `groupSize` (within `range`), used to suggest
+ * sizes that do work when the requested one is not possible. The server does
+ * all the maths; results share the normal quote cache.
+ */
+export function useNearbyPossibleSizes(
+  cinemaId: number | undefined,
+  groupSize: number | undefined,
+  enabled: boolean,
+  range = 3,
+): number[] {
+  const sizes =
+    groupSize === undefined
+      ? []
+      : Array.from({ length: range * 2 + 1 }, (_, index) => groupSize - range + index).filter(
+          (size) => size >= 1 && size <= 10_000 && size !== groupSize,
+        );
+  const results = useQueries({
+    queries: sizes.map((size) => ({
+      queryKey: queryKeys.bookingQuote(cinemaId ?? 0, size),
+      queryFn: () => api.get<BookingQuote>(`/cinemas/${cinemaId}/booking?groupSize=${size}`),
+      enabled: enabled && cinemaId !== undefined,
+      staleTime: Infinity,
+    })),
+  });
+  return sizes.filter((_, index) => results[index]?.data?.possible);
+}
+
+/* Reservations ------------------------------------------------------------ */
+
+export function useReservations() {
+  return useQuery({
+    queryKey: queryKeys.reservations,
+    queryFn: () => api.get<Reservation[]>('/reservations'),
+  });
+}
+
+export function useCreateReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ReservationInput) => api.post<Reservation>('/reservations', input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.reservations }),
+  });
+}
+
+export function useCancelReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/reservations/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.reservations }),
   });
 }
 
