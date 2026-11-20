@@ -24,6 +24,12 @@
     box-shadow var(--duration-fast) var(--ease-out);
 }
 
+.control:disabled {
+  border-style: dashed;
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 .control::placeholder {
   color: var(--color-text-subtle);
 }

@@ -1,3 +1,4 @@
+import { getGuestId } from '../lib/guest';
 import type { ApiErrorBody, CycleStep } from './types';
 
 /** Error thrown for any non-2xx response, carrying the API's machine-readable code. */
@@ -39,6 +40,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       ...init,
       headers: {
         Accept: 'application/json',
+        'X-Guest-Id': getGuestId(),
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         ...init.headers,
       },

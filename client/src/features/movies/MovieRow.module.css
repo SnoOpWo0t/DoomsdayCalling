@@ -95,3 +95,8 @@
   color: var(--color-accent-strong);
   text-decoration: underline;
 }
+
+.yours {
+  color: var(--color-accent);
+  font-weight: 600;
+}

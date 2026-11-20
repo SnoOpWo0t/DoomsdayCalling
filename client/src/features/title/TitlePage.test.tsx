@@ -18,6 +18,8 @@ const movie = (id: number, title: string, overrides: Partial<Movie> = {}): Movie
   posterPath: null,
   posterUrl: null,
   prerequisiteIds: [],
+  canEdit: true,
+  addedByYou: false,
   createdAt: '',
   updatedAt: '',
   ...overrides,

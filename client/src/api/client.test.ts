@@ -51,6 +51,17 @@ describe('api client', () => {
     });
   });
 
+  it('sends the same anonymous guest id with every request', async () => {
+    const fetch = respond(200, []);
+    await api.get('/movies');
+    await api.get('/cinemas');
+    const ids = fetch.mock.calls.map(
+      ([, init]) => (init?.headers as Record<string, string>)['X-Guest-Id'],
+    );
+    expect(ids[0]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(ids[1]).toBe(ids[0]);
+  });
+
   it('reports network failures clearly', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
     await expect(api.get('/movies')).rejects.toMatchObject({ code: 'NETWORK_ERROR', status: 0 });

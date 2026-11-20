@@ -18,6 +18,10 @@ export interface Movie {
   /** Poster found automatically (TMDb, TVMaze or Wikipedia), when available. */
   posterUrl: string | null;
   prerequisiteIds: number[];
+  /** This browser's guest may edit details and delete it. */
+  canEdit: boolean;
+  /** Added from this browser. */
+  addedByYou: boolean;
   createdAt: string;
   updatedAt: string;
 }
