@@ -48,6 +48,17 @@ npm run dev          # API on :4000, client on :5173
 
 Open **http://localhost:5173**.
 
+### Option C: Deploy for free (Vercel + Neon)
+
+The website and the API both run on **Vercel**; the API runs as a single serverless function (`api/index.mjs`) that wraps the same Express app. The database is **Neon**'s free PostgreSQL.
+
+1. **Neon:** create a free project at [neon.tech](https://neon.tech) and copy the **pooled** connection string (it ends in `?sslmode=require`).
+2. **Vercel:** go to _Add New → Project_, import this GitHub repository, and keep the root directory as the repo root. `vercel.json` already sets the install, build and output settings.
+3. Under _Environment Variables_, add `DATABASE_URL` = the Neon string. `TMDB_API_KEY` is optional.
+4. **Deploy.** The build (`npm run vercel-build`) compiles both apps, applies migrations, seeds the sample data if the database is empty, and fetches posters.
+
+Every later push to `main` redeploys automatically. On Vercel, background work such as fetching a new title's poster is kept alive with `waitUntil`, and lookups for titles never checked happen on their details page.
+
 ### Posters and details (no setup needed)
 
 Posters, overviews, genres and ratings are found automatically, **without any API key**: [TVMaze](https://www.tvmaze.com/api) for series and [Wikipedia](https://www.mediawiki.org/wiki/API:Main_page) for movies. They are cached in the database, and the server fills in missing titles in the background on startup. Set `METADATA_LOOKUPS=false` to make no external requests.
@@ -61,14 +72,15 @@ With a free [TMDb](https://www.themoviedb.org/settings/api) key you also get mov
 
 ### Scripts
 
-| Command                                    | What it does                                       |
-| ------------------------------------------ | -------------------------------------------------- |
-| `npm run dev`                              | API and client with hot reload                     |
-| `npm test`                                 | All server and client tests                        |
-| `npm run lint` / `npm run typecheck`       | ESLint / TypeScript across both workspaces         |
-| `npm run build`                            | Production builds                                  |
-| `npm run db:up` / `db:migrate` / `db:seed` | Start Postgres, apply migrations, load sample data |
-| `npm run docker:up`                        | `docker compose up --build`                        |
+| Command                                    | What it does                                            |
+| ------------------------------------------ | ------------------------------------------------------- |
+| `npm run dev`                              | API and client with hot reload                          |
+| `npm test`                                 | All server and client tests                             |
+| `npm run lint` / `npm run typecheck`       | ESLint / TypeScript across both workspaces              |
+| `npm run build`                            | Production builds                                       |
+| `npm run db:up` / `db:migrate` / `db:seed` | Start Postgres, apply migrations, load sample data      |
+| `npm run docker:up`                        | `docker compose up --build`                             |
+| `npm run vercel-build`                     | Build, migrate, seed and fetch posters (used by Vercel) |
 
 ## Features
 
@@ -311,6 +323,8 @@ erDiagram
 │       ├── components/        layout/ and ui/ (Button, Field, Dialog, ProgressBar, …)
 │       ├── features/          movies/, title/, rewatch/, booking/ (one folder per view)
 │       └── styles/            design tokens + global styles
+├── api/index.mjs              Vercel function: wraps the Express app
+├── vercel.json                Vercel build, function and rewrite settings
 ├── docker-compose.yml         db → server → client (nginx)
 └── .github/workflows/ci.yml   format, lint, typecheck, test, build, Docker build
 ```

@@ -3,13 +3,7 @@ import { loadConfig } from './config.js';
 import { migrate } from './db/migrate.js';
 import { createPool } from './db/pool.js';
 import { seed } from './db/seed.js';
-import { createMetadataService } from './modules/metadata/metadata.service.js';
-import {
-  createTmdbProvider,
-  createTvmazeProvider,
-  createWikipediaProvider,
-} from './modules/metadata/providers.js';
-import { createTmdbClient } from './modules/tmdb/tmdb.client.js';
+import { createIntegrations } from './composition.js';
 
 try {
   process.loadEnvFile();
@@ -23,19 +17,7 @@ const db = createPool(config.DATABASE_URL);
 await migrate(db);
 if (config.SEED_ON_START) await seed(db);
 
-// Composition root: external integrations are created here and injected,
-// so tests can build the app without any network access.
-const tmdb = config.TMDB_API_KEY ? createTmdbClient({ apiKey: config.TMDB_API_KEY }) : undefined;
-const metadata = createMetadataService(
-  db,
-  config.METADATA_LOOKUPS
-    ? [
-        ...(tmdb ? [createTmdbProvider(tmdb)] : []),
-        createTvmazeProvider(),
-        createWikipediaProvider(),
-      ]
-    : [],
-);
+const { tmdb, metadata } = createIntegrations(db, config);
 
 const app = createApp({ db, config, tmdb, metadata });
 const server = app.listen(config.PORT, () => {
