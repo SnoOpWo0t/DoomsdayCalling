@@ -46,3 +46,15 @@ export function describeLength(title: Watchable): string {
   if (title.kind === 'movie') return formatRuntime(title.runtimeMinutes);
   return `${pluralize(title.episodeCount, 'episode')} · ${formatRuntime(watchTime(title))}`;
 }
+
+/**
+ * Bundles as a plain sentence fragment:
+ * [{20,1},{9,2},{6,1}] -> "1 bundle of 20 seats, 2 bundles of 9 seats and 1 bundle of 6 seats".
+ */
+export function describeBundles(bundles: ReadonlyArray<{ size: number; count: number }>): string {
+  const parts = bundles.map(
+    ({ size, count }) => `${pluralize(count, 'bundle')} of ${pluralize(size, 'seat')}`,
+  );
+  if (parts.length <= 1) return parts[0] ?? '';
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}

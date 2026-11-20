@@ -9,6 +9,8 @@ import {
   createMetadataService,
   type MetadataService,
 } from './modules/metadata/metadata.service.js';
+import { reservationRoutes } from './modules/reservations/reservation.routes.js';
+import { createReservationService } from './modules/reservations/reservation.service.js';
 import { movieRoutes } from './modules/movies/movie.routes.js';
 import { createMovieService } from './modules/movies/movie.service.js';
 import { createTmdbClient, type TmdbClient } from './modules/tmdb/tmdb.client.js';
@@ -47,6 +49,7 @@ export function createApp({ db, config, tmdb, metadata }: AppDependencies): Expr
   });
   api.use('/movies', movieRoutes(movieService, metadataService));
   api.use('/cinemas', cinemaRoutes(createCinemaService(db)));
+  api.use('/reservations', reservationRoutes(createReservationService(db)));
 
   const tmdbClient =
     tmdb ?? (config.TMDB_API_KEY ? createTmdbClient({ apiKey: config.TMDB_API_KEY }) : undefined);

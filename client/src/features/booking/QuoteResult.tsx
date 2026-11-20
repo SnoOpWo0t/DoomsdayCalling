@@ -1,6 +1,7 @@
 import { Armchair, Ban } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { BookingQuote } from '../../api/types';
-import { pluralize } from '../../lib/format';
+import { describeBundles, pluralize } from '../../lib/format';
 import styles from './QuoteResult.module.css';
 
 /** Above this many bundles the strip groups by size instead of drawing each bundle. */
@@ -9,7 +10,13 @@ const MAX_DRAWN_BUNDLES = 40;
 /** Shades for up to 10 bundle sizes, from the accent outwards. */
 const SHADES = ['0.79', '0.66', '0.88', '0.56', '0.72', '0.94', '0.6', '0.84', '0.7', '0.9'];
 
-export function QuoteResult({ quote }: { quote: BookingQuote }) {
+export interface QuoteResultProps {
+  quote: BookingQuote;
+  /** Shown under "Not possible", e.g. nearby group sizes that work. */
+  suggestions?: ReactNode;
+}
+
+export function QuoteResult({ quote, suggestions }: QuoteResultProps) {
   if (!quote.possible || quote.totalBundles === null) {
     return (
       <div className={styles.impossible} role="status">
@@ -20,9 +27,10 @@ export function QuoteResult({ quote }: { quote: BookingQuote }) {
           <p className={styles.impossibleTitle}>Not possible</p>
           <p className={styles.impossibleText}>
             No mix of {formatSizes(quote.cinema.bundleSizes)}-seat bundles at {quote.cinema.name}{' '}
-            adds up to exactly {pluralize(quote.groupSize, 'seat')}. Try a different group size or
-            cinema.
+            adds up to exactly {pluralize(quote.groupSize, 'seat')}, so some seats would stay empty.
+            Try a different group size or cinema.
           </p>
+          {suggestions}
         </div>
       </div>
     );
@@ -51,6 +59,11 @@ export function QuoteResult({ quote }: { quote: BookingQuote }) {
           {pluralize(quote.groupSize, 'seat')}, no empty seats
         </p>
       </div>
+
+      <p className={styles.sentence}>
+        Buy {describeBundles(quote.bundles)}. That is exactly {pluralize(quote.groupSize, 'seat')}{' '}
+        for your group.
+      </p>
 
       <div className={styles.strip} aria-hidden>
         {segments.map((segment, index) => (

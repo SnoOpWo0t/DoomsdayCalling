@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { BookingQuote } from '../../api/types';
 import { parseBundleSizes, parseGroupSize } from './bundle-sizes';
 import { QuoteResult } from './QuoteResult';
+import { TicketCard } from './TicketCard';
 
 describe('parseBundleSizes', () => {
   it.each([
@@ -62,6 +63,11 @@ describe('QuoteResult', () => {
     render(<QuoteResult quote={quote} />);
 
     expect(screen.getByRole('status')).toHaveTextContent('4bundles');
+    expect(
+      screen.getByText(
+        /Buy 1 bundle of 20 seats, 2 bundles of 9 seats and 1 bundle of 6 seats\. That is exactly 44 seats/,
+      ),
+    ).toBeInTheDocument();
     const rows = within(screen.getByRole('table')).getAllByRole('row');
     expect(rows.map((row) => row.textContent)).toEqual([
       'BundleQuantitySeats',
@@ -86,8 +92,43 @@ describe('QuoteResult', () => {
     );
     expect(screen.getByText('Not possible')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'No mix of 4- and 6-seat bundles at Velvet Row Cinema adds up to exactly 7 seats.',
+      'No mix of 4- and 6-seat bundles at Velvet Row Cinema adds up to exactly 7 seats, so some seats would stay empty.',
     );
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+});
+
+describe('TicketCard', () => {
+  const reservation = {
+    id: 1,
+    reference: 'DC-7K4Q2M',
+    name: 'Avengers fan club',
+    cinema: { id: 3, name: 'Meridian Grand' },
+    groupSize: 44,
+    totalBundles: 4,
+    bundles: [
+      { size: 20, count: 1 },
+      { size: 9, count: 2 },
+      { size: 6, count: 1 },
+    ],
+    canCancel: true,
+    createdAt: '',
+  };
+
+  it('shows the reference, cinema, seats and bundles', () => {
+    render(<TicketCard reservation={reservation} />);
+    const ticket = screen.getByRole('article', { name: 'Reservation DC-7K4Q2M' });
+    expect(ticket).toHaveTextContent('Avengers fan club');
+    expect(ticket).toHaveTextContent('Meridian Grand');
+    expect(ticket).toHaveTextContent('44 seats');
+    expect(ticket).toHaveTextContent('2 bundles of 9 seats');
+  });
+
+  it('offers cancel only when allowed', () => {
+    const onCancel = vi.fn();
+    const { rerender } = render(<TicketCard reservation={reservation} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: /Cancel/ })).toBeInTheDocument();
+    rerender(<TicketCard reservation={{ ...reservation, canCancel: false }} onCancel={onCancel} />);
+    expect(screen.queryByRole('button', { name: /Cancel/ })).not.toBeInTheDocument();
   });
 });

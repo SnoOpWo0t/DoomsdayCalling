@@ -1,7 +1,7 @@
 import { Clapperboard, Plus, RefreshCw, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useBookingQuote, useCinemas } from '../../api/queries';
+import { useBookingQuote, useCinemas, useNearbyPossibleSizes } from '../../api/queries';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { TextField } from '../../components/ui/Field';
@@ -13,7 +13,10 @@ import { parseGroupSize } from './bundle-sizes';
 import styles from './BookingPage.module.css';
 import { CinemaFormDialog } from './CinemaFormDialog';
 import { CinemaPicker } from './CinemaPicker';
+import { HowItWorks } from './HowItWorks';
+import { MyReservations } from './MyReservations';
 import { QuoteResult } from './QuoteResult';
+import { ReservePanel } from './ReservePanel';
 
 const PRESETS = [6, 11, 44, 7];
 
@@ -34,6 +37,7 @@ export function BookingPage() {
       : undefined;
 
   const quote = useBookingQuote(cinemaId, groupSize);
+  const nearby = useNearbyPossibleSizes(cinemaId, groupSize, quote.data?.possible === false);
 
   // Keep the URL in sync so a quote can be bookmarked or shared.
   useEffect(() => {
@@ -61,9 +65,9 @@ export function BookingPage() {
 
   const header = (
     <PageHeader
-      eyebrow="Opening night"
+      eyebrow="Opening night · Avengers: Doomsday"
       title="Book a watch party"
-      description="Cinemas sell premiere seats only in fixed bundles. Pick a cinema and a group size to find the fewest bundles with no empty seats."
+      description="Going with friends? Work out exactly which seat bundles to buy for your group, then reserve them."
       actions={
         <Button icon={Plus} onClick={() => setAdding(true)}>
           Add cinema
@@ -131,6 +135,7 @@ export function BookingPage() {
   return (
     <>
       {header}
+      <HowItWorks />
 
       <div className={styles.layout}>
         <section aria-labelledby="cinema-heading" className={styles.cinemas}>
@@ -142,7 +147,7 @@ export function BookingPage() {
 
         <section aria-labelledby="quote-heading" className={styles.quote}>
           <h2 id="quote-heading" className={styles.sectionTitle}>
-            2. Size your group
+            2. How many are coming?
           </h2>
 
           <div className={styles.groupRow}>
@@ -174,19 +179,47 @@ export function BookingPage() {
 
           <div className={styles.resultArea} aria-busy={quote.isFetching || undefined}>
             {groupSize === undefined ? (
-              <p className={styles.placeholder}>Enter a group size to see the bundles to buy.</p>
+              <p className={styles.placeholder}>
+                Enter how many people are coming to see which bundles to buy.
+              </p>
             ) : quote.isError ? (
               <StateMessage icon={RefreshCw} title="Could not get a quote" tone="danger">
                 {quote.error.message}
               </StateMessage>
             ) : quote.data ? (
-              <QuoteResult quote={quote.data} />
+              <>
+                <QuoteResult
+                  quote={quote.data}
+                  suggestions={
+                    nearby.length > 0 && (
+                      <div className={styles.suggestions}>
+                        <span>Works at this cinema:</span>
+                        {nearby.map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            className={styles.preset}
+                            onClick={() => setGroupText(String(size))}
+                          >
+                            <Users size={14} aria-hidden />
+                            {size}
+                            <span className="sr-only"> people</span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  }
+                />
+                {quote.data.possible && <ReservePanel quote={quote.data} />}
+              </>
             ) : (
               <p className={styles.placeholder}>Working out the best bundles...</p>
             )}
           </div>
         </section>
       </div>
+
+      <MyReservations />
 
       {dialog}
     </>

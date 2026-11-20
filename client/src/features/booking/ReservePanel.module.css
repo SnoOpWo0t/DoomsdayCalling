@@ -1,0 +1,53 @@
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.title {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.row > button {
+  margin-top: 1.75rem;
+  min-height: 2.75rem;
+}
+
+.field {
+  flex: 1 1 16rem;
+}
+
+.done {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.doneTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
