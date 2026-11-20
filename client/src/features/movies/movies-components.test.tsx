@@ -20,6 +20,8 @@ const movie = (id: number, title: string, releaseYear: number): Movie => ({
   posterPath: null,
   posterUrl: null,
   prerequisiteIds: [],
+  canEdit: true,
+  addedByYou: false,
   createdAt: '',
   updatedAt: '',
 });

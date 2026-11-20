@@ -31,6 +31,8 @@ export interface MovieFormDialogProps {
 
 export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps) {
   const isEdit = movie !== undefined;
+  // Guests can only change what to watch first on titles they did not add.
+  const locked = isEdit && !movie.canEdit;
   const [values, setValues] = useState<MovieFormValues>(() => initialValues(movie));
   const [errors, setErrors] = useState<MovieFormErrors>({});
   const [serverError, setServerError] = useState<ApiError | null>(null);
@@ -71,8 +73,11 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
 
     const input = toMovieInput(values);
     try {
-      if (isEdit) await updateMovie.mutateAsync({ id: movie.id, patch: input });
-      else await createMovie.mutateAsync(input);
+      if (isEdit) {
+        const patch = locked ? { prerequisiteIds: input.prerequisiteIds } : input;
+        await updateMovie.mutateAsync({ id: movie.id, patch });
+      }
+      if (!isEdit) await createMovie.mutateAsync(input);
       onClose();
     } catch (caught) {
       if (!(caught instanceof ApiError)) throw caught;
@@ -104,34 +109,49 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
       }
     >
       <form id="movie-form" className={styles.form} onSubmit={handleSubmit} noValidate>
-        <SegmentedControl<TitleKind>
-          label="Type"
-          value={values.kind}
-          onChange={(kind) => set('kind', kind)}
-          options={[
-            { value: 'movie', label: 'Movie' },
-            { value: 'series', label: 'Series' },
-          ]}
-        />
+        {locked ? (
+          <Alert tone="info" title="Added by someone else">
+            In guest mode you can change what to watch first. The title, year and runtime can only
+            be changed by the guest who added it.
+          </Alert>
+        ) : (
+          <SegmentedControl<TitleKind>
+            label="Type"
+            value={values.kind}
+            onChange={(kind) => set('kind', kind)}
+            options={[
+              { value: 'movie', label: 'Movie' },
+              { value: 'series', label: 'Series' },
+            ]}
+          />
+        )}
 
         {/* TMDb lookup searches films, so it is only offered for movies. */}
-        {tmdbStatus.data?.enabled && values.kind === 'movie' && <TmdbLookup onPick={applyTmdb} />}
+        {!locked && tmdbStatus.data?.enabled && values.kind === 'movie' && (
+          <TmdbLookup onPick={applyTmdb} />
+        )}
 
         <div className={styles.identity}>
-          <Poster title={values.title || '?'} posterPath={values.posterPath} size="sm" />
+          <Poster
+            title={values.title || '?'}
+            posterPath={values.posterPath}
+            posterUrl={movie?.posterUrl}
+            size="sm"
+          />
           <TextField
             label="Title"
             value={values.title}
             onChange={(event) => set('title', event.target.value)}
             error={errors.title}
             maxLength={200}
-            autoFocus={!tmdbStatus.data?.enabled}
+            disabled={locked}
+            autoFocus={!tmdbStatus.data?.enabled && !locked}
             required
             fieldClassName={styles.titleField}
           />
         </div>
 
-        {values.tmdbId !== null && (
+        {values.tmdbId !== null && !locked && (
           <p className={styles.linked}>
             Linked to TMDb #{values.tmdbId}
             <Button
@@ -154,6 +174,7 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
             value={values.releaseYear}
             onChange={(event) => set('releaseYear', event.target.value)}
             error={errors.releaseYear}
+            disabled={locked}
             placeholder="2012"
             required
           />
@@ -164,6 +185,7 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
               value={values.episodeCount}
               onChange={(event) => set('episodeCount', event.target.value)}
               error={errors.episodeCount}
+              disabled={locked}
               hint={`${LIMITS.episodes.min}-${LIMITS.episodes.max}`}
               placeholder="9"
               required
@@ -175,6 +197,7 @@ export function MovieFormDialog({ movie, movies, onClose }: MovieFormDialogProps
             value={values.runtimeMinutes}
             onChange={(event) => set('runtimeMinutes', event.target.value)}
             error={errors.runtimeMinutes}
+            disabled={locked}
             hint={`${LIMITS.runtime.min}-${LIMITS.runtime.max}`}
             placeholder={values.kind === 'series' ? '45' : '143'}
             required

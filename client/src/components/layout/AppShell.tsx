@@ -1,4 +1,4 @@
-import { CalendarClock, Film, ListOrdered, Ticket, type LucideIcon } from 'lucide-react';
+import { CalendarClock, Film, ListOrdered, Ticket, UserRound, type LucideIcon } from 'lucide-react';
 import { NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router';
 import { PREMIERE_DATE } from '../../lib/constants';
 import { daysUntil, pluralize } from '../../lib/format';
@@ -47,6 +47,13 @@ export function AppShell() {
           </nav>
 
           <PremiereCountdown />
+          <span
+            className={styles.guest}
+            title="You are browsing as a guest. You can edit and delete the titles you add from this browser."
+          >
+            <UserRound size={14} aria-hidden />
+            Guest
+          </span>
         </div>
       </header>
 

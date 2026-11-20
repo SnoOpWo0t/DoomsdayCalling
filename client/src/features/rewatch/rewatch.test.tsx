@@ -17,6 +17,8 @@ const movie = (id: number, title: string, runtimeMinutes: number, watched = fals
   posterPath: null,
   posterUrl: null,
   prerequisiteIds: [],
+  canEdit: true,
+  addedByYou: false,
   createdAt: '',
   updatedAt: '',
 });

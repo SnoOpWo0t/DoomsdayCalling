@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { actorFrom } from '../../lib/actor.js';
 import { createMovieSchema, movieIdParam, updateMovieSchema } from './movie.schemas.js';
 import type { MetadataService } from '../metadata/metadata.service.js';
 import type { MovieService } from './movie.service.js';
+import { presentMovie } from './movie.presenter.js';
 import type { Movie } from './movie.types.js';
 
 const byReleaseThenTitle = (a: Movie, b: Movie) =>
@@ -10,18 +12,20 @@ const byReleaseThenTitle = (a: Movie, b: Movie) =>
 export function movieRoutes(movies: MovieService, metadata: MetadataService): Router {
   const router = Router();
 
-  router.get('/', async (_req, res) => {
-    res.json(await movies.list());
+  router.get('/', async (req, res) => {
+    const actor = actorFrom(req);
+    res.json((await movies.list()).map((movie) => presentMovie(movie, actor)));
   });
 
   router.post('/', async (req, res) => {
+    const actor = actorFrom(req);
     const input = createMovieSchema.parse(req.body);
-    res.status(201).json(await movies.create(input));
+    res.status(201).json(presentMovie(await movies.create(input, actor), actor));
   });
 
   router.get('/:id', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
-    res.json(await movies.get(id));
+    res.json(presentMovie(await movies.get(id), actorFrom(req)));
   });
 
   /**
@@ -32,34 +36,47 @@ export function movieRoutes(movies: MovieService, metadata: MetadataService): Ro
    */
   router.get('/:id/details', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
+    const actor = actorFrom(req);
+    const present = (title: Movie) => presentMovie(title, actor);
     const movie = await movies.get(id);
     const all = await movies.list();
     const prerequisiteIds = new Set(movie.prerequisiteIds);
 
     res.json({
-      movie,
-      prerequisites: all.filter((other) => prerequisiteIds.has(other.id)).sort(byReleaseThenTitle),
+      movie: present(movie),
+      prerequisites: all
+        .filter((other) => prerequisiteIds.has(other.id))
+        .sort(byReleaseThenTitle)
+        .map(present),
       dependents: all
         .filter((other) => other.prerequisiteIds.includes(movie.id))
-        .sort(byReleaseThenTitle),
+        .sort(byReleaseThenTitle)
+        .map(present),
       metadata: await metadata.get(movie).catch(() => null),
     });
   });
 
   router.get('/:id/rewatch-order', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
-    res.json(await movies.rewatchPlan(id));
+    const actor = actorFrom(req);
+    const plan = await movies.rewatchPlan(id);
+    res.json({
+      ...plan,
+      target: presentMovie(plan.target, actor),
+      movies: plan.movies.map((movie) => presentMovie(movie, actor)),
+    });
   });
 
   router.patch('/:id', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
+    const actor = actorFrom(req);
     const patch = updateMovieSchema.parse(req.body);
-    res.json(await movies.update(id, patch));
+    res.json(presentMovie(await movies.update(id, patch, actor), actor));
   });
 
   router.delete('/:id', async (req, res) => {
     const { id } = movieIdParam.parse(req.params);
-    await movies.remove(id);
+    await movies.remove(id, actorFrom(req));
     res.status(204).end();
   });
 

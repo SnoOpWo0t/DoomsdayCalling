@@ -45,6 +45,12 @@ export function MovieRow({
           <span>{movie.releaseYear}</span>
           <span aria-hidden>·</span>
           <span>{describeLength(movie)}</span>
+          {movie.addedByYou && (
+            <>
+              <span aria-hidden>·</span>
+              <span className={styles.yours}>Added by you</span>
+            </>
+          )}
         </p>
         <p className={styles.prerequisites}>
           <Link2 size={14} aria-hidden />
@@ -62,12 +68,14 @@ export function MovieRow({
       <div className={styles.actions}>
         <WatchToggle watched={movie.watched} title={movie.title} onChange={onToggleWatched} />
         <IconButton icon={Pencil} label={`Edit ${movie.title}`} onClick={onEdit} />
-        <IconButton
-          icon={Trash2}
-          label={`Delete ${movie.title}`}
-          variant="danger"
-          onClick={onDelete}
-        />
+        {movie.canEdit && (
+          <IconButton
+            icon={Trash2}
+            label={`Delete ${movie.title}`}
+            variant="danger"
+            onClick={onDelete}
+          />
+        )}
       </div>
     </li>
   );
