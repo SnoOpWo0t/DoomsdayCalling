@@ -22,6 +22,8 @@ export interface Movie {
   posterUrl: string | null;
   /** Ids of the movies to watch before this one. */
   prerequisiteIds: number[];
+  /** Guest id of whoever added it; internal, never sent to clients. */
+  createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,3 +42,11 @@ export interface RewatchPlan {
   /** Total watch time (runtime x episodes) of the titles in `movies` not yet watched. */
   unwatchedRuntimeMinutes: number;
 }
+
+/** A title as sent to a client: owner hidden, permissions for the caller added. */
+export type MovieDto = Omit<Movie, 'createdBy'> & {
+  /** The caller may edit details and delete this title. */
+  canEdit: boolean;
+  /** The caller's guest id added this title. */
+  addedByYou: boolean;
+};

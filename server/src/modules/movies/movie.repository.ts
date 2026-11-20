@@ -23,6 +23,7 @@ const SELECT_MOVIE = `
              WHERE p.movie_id = m.id),
            '{}'
          )                 AS "prerequisiteIds",
+         m.created_by      AS "createdBy",
          m.created_at      AS "createdAt",
          m.updated_at      AS "updatedAt"
     FROM movies m
@@ -71,12 +72,13 @@ export async function insertMovie(
     | 'watched'
     | 'tmdbId'
     | 'posterPath'
+    | 'createdBy'
   >,
 ): Promise<number> {
   const { rows } = await db.query<{ id: number }>(
     `INSERT INTO movies
-       (kind, title, release_year, runtime_minutes, episode_count, watched, tmdb_id, poster_path)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (kind, title, release_year, runtime_minutes, episode_count, watched, tmdb_id, poster_path, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       movie.kind,
@@ -87,6 +89,7 @@ export async function insertMovie(
       movie.watched,
       movie.tmdbId,
       movie.posterPath,
+      movie.createdBy,
     ],
   );
   return rows[0]!.id;
@@ -174,11 +177,14 @@ export async function lockPrerequisiteGraph(db: Queryable): Promise<void> {
   await db.query("SELECT pg_advisory_xact_lock(hashtext('movie_prerequisite_graph'))");
 }
 
-/** Locks one title row for the rest of the transaction; returns its kind, or undefined if missing. */
-export async function lockMovie(db: Queryable, id: number): Promise<Movie['kind'] | undefined> {
-  const { rows } = await db.query<{ kind: Movie['kind'] }>(
-    'SELECT kind FROM movies WHERE id = $1 FOR UPDATE',
+/** Locks one title row for the rest of the transaction; undefined if it does not exist. */
+export async function lockMovie(
+  db: Queryable,
+  id: number,
+): Promise<Pick<Movie, 'kind' | 'createdBy'> | undefined> {
+  const { rows } = await db.query<Pick<Movie, 'kind' | 'createdBy'>>(
+    'SELECT kind, created_by AS "createdBy" FROM movies WHERE id = $1 FOR UPDATE',
     [id],
   );
-  return rows[0]?.kind;
+  return rows[0];
 }

@@ -1,4 +1,5 @@
 import { withTransaction, type Db, type Queryable } from '../../db/pool.js';
+import { canManage, type Actor } from '../../lib/actor.js';
 import { AppError, ErrorCode, notFound } from '../../lib/errors.js';
 import { isUniqueViolation } from '../../lib/pg-errors.js';
 import { findCycle, rewatchOrder } from './dependency-graph.js';
@@ -9,6 +10,22 @@ import {
   type UpdateMovieInput,
 } from './movie.schemas.js';
 import type { Movie, RewatchPlan } from './movie.types.js';
+
+/** API callers without a guest id have full access (see lib/actor.ts). */
+const FULL_ACCESS: Actor = { guestId: undefined };
+
+/** Fields only a title's owner may change. */
+const DETAIL_FIELDS = [
+  'kind',
+  'title',
+  'releaseYear',
+  'runtimeMinutes',
+  'episodeCount',
+  'tmdbId',
+  'posterPath',
+] as const;
+
+const forbidden = (message: string) => new AppError(403, ErrorCode.FORBIDDEN, message);
 
 export interface MovieServiceHooks {
   /** Called after a title is created or its title, year or kind changes. */
@@ -27,12 +44,15 @@ export function createMovieService(db: Db, hooks: MovieServiceHooks = {}) {
       return movie;
     },
 
-    async create(input: CreateMovieInput): Promise<Movie> {
+    async create(input: CreateMovieInput, actor: Actor = FULL_ACCESS): Promise<Movie> {
       return withTransaction(db, async (tx) => {
         if (input.prerequisiteIds.length > 0) await repo.lockPrerequisiteGraph(tx);
         await assertPrerequisitesExist(tx, input.prerequisiteIds);
 
-        const id = await insertOrConflict(() => repo.insertMovie(tx, input), input.title);
+        const id = await insertOrConflict(
+          () => repo.insertMovie(tx, { ...input, createdBy: actor.guestId ?? null }),
+          input.title,
+        );
 
         // A brand-new movie has no dependents yet, so a cycle is impossible
         // here. The check still runs so every write path enforces the same rule.
@@ -46,13 +66,23 @@ export function createMovieService(db: Db, hooks: MovieServiceHooks = {}) {
       });
     },
 
-    async update(id: number, patch: UpdateMovieInput): Promise<Movie> {
+    async update(id: number, patch: UpdateMovieInput, actor: Actor = FULL_ACCESS): Promise<Movie> {
       return withTransaction(db, async (tx) => {
         const { prerequisiteIds, ...fields } = patch;
 
         if (prerequisiteIds !== undefined) await repo.lockPrerequisiteGraph(tx);
-        const currentKind = await repo.lockMovie(tx, id);
-        if (!currentKind) throw notFound('Movie', id);
+        const current = await repo.lockMovie(tx, id);
+        if (!current) throw notFound('Movie', id);
+        const currentKind = current.kind;
+
+        // Anyone may tick watched or change what to watch first; only the guest
+        // who added a title may change its details.
+        const changesDetails = DETAIL_FIELDS.some((field) => patch[field] !== undefined);
+        if (changesDetails && !canManage(actor, current.createdBy)) {
+          throw forbidden(
+            'Only the guest who added this title can change its details. You can still tick it as watched or change what to watch first.',
+          );
+        }
 
         // A movie always has one episode: switching to "movie" resets the
         // count, and a movie cannot be given more episodes.
@@ -115,9 +145,13 @@ export function createMovieService(db: Db, hooks: MovieServiceHooks = {}) {
       };
     },
 
-    async remove(id: number): Promise<void> {
-      const deleted = await repo.deleteMovie(db, id);
-      if (!deleted) throw notFound('Movie', id);
+    async remove(id: number, actor: Actor = FULL_ACCESS): Promise<void> {
+      const movie = await repo.findMovieById(db, id);
+      if (!movie) throw notFound('Movie', id);
+      if (!canManage(actor, movie.createdBy)) {
+        throw forbidden('Only the guest who added this title can delete it.');
+      }
+      await repo.deleteMovie(db, id);
     },
   };
 }
