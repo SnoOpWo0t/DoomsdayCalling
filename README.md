@@ -92,6 +92,8 @@ With a free [TMDb](https://www.themoviedb.org/settings/api) key you also get mov
 | **Rewatch plan**    | Pick a target and see the ordered list with ticks, an "X of Y watched" progress bar and remaining time. The target is in the URL (`/plan?target=8`) |
 | **Booking**         | Pick a cinema and a group size; see the bundles (with a seat strip) or "Not possible". Shareable via `/booking?cinema=3&group=44`                   |
 
+**Guest mode.** There is no login yet. Each browser gets an anonymous guest id (stored locally and sent as `X-Guest-Id`). Guests can add titles, and edit or delete **only the ones they added**. On every title they can still tick watched and change what to watch first, so the brief's circular-dependency example works in the UI. API requests without a guest id keep full access, so the brief's endpoints behave exactly as specified. Real accounts with an admin role can build on this later.
+
 Clicking any title opens its **details page** (`/titles/:id`): poster with a blurred backdrop, overview, genres and rating, what to watch first and what it unlocks next, the watched toggle, edit, and a link to its rewatch plan. Posters also appear in every list.
 
 Ticking watched updates the list, progress bar and remaining time instantly (optimistic update with rollback). Each view has loading, empty and error states. The UI is keyboard and screen-reader friendly, and responsive down to phone widths.
@@ -196,15 +198,16 @@ GET /api/cinemas/3/booking?groupSize=44
 
 Every error has the shape `{ "error": { "code", "message", "details?" } }`.
 
-| Status | Code                                 | When                                                         |
-| ------ | ------------------------------------ | ------------------------------------------------------------ |
-| 400    | `VALIDATION_ERROR`                   | Invalid body or query; `details` lists each field            |
-| 400    | `UNKNOWN_PREREQUISITE`               | A prerequisite id does not exist                             |
-| 404    | `NOT_FOUND`                          | Unknown movie, cinema or route                               |
-| 409    | `DUPLICATE_TITLE` / `DUPLICATE_NAME` | Title or name already used (case-insensitive)                |
-| 409    | `CIRCULAR_DEPENDENCY`                | The change would create a loop; `details.cycle` has the path |
-| 502    | `EXTERNAL_SERVICE_UNAVAILABLE`       | TMDb failed or timed out                                     |
-| 503    | `TMDB_NOT_CONFIGURED`                | TMDb lookup used without a key                               |
+| Status | Code                                 | When                                                                    |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------- |
+| 400    | `VALIDATION_ERROR`                   | Invalid body or query; `details` lists each field                       |
+| 400    | `UNKNOWN_PREREQUISITE`               | A prerequisite id does not exist                                        |
+| 403    | `FORBIDDEN`                          | A guest tried to edit details of, or delete, a title someone else added |
+| 404    | `NOT_FOUND`                          | Unknown movie, cinema or route                                          |
+| 409    | `DUPLICATE_TITLE` / `DUPLICATE_NAME` | Title or name already used (case-insensitive)                           |
+| 409    | `CIRCULAR_DEPENDENCY`                | The change would create a loop; `details.cycle` has the path            |
+| 502    | `EXTERNAL_SERVICE_UNAVAILABLE`       | TMDb failed or timed out                                                |
+| 503    | `TMDB_NOT_CONFIGURED`                | TMDb lookup used without a key                                          |
 
 ## Data model
 
@@ -222,6 +225,7 @@ erDiagram
         int release_year "1888-2100"
         int runtime_minutes "1-300, per episode for series"
         int episode_count "1-500, always 1 for movies"
+        text created_by "guest id of whoever added it, internal"
         boolean watched "default false"
         int tmdb_id "optional"
         text poster_path "optional, TMDb file path"
@@ -272,7 +276,7 @@ erDiagram
 ```
 .
 ├── server/                    Express 5 + TypeScript API
-│   ├── migrations/            001_create_movies.sql … 005_create_title_metadata.sql
+│   ├── migrations/            001_create_movies.sql … 006_add_title_owner.sql
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── movies/        dependency-graph.ts (algorithms), schemas, repository, service, routes
@@ -303,13 +307,13 @@ erDiagram
 
 ## Testing
 
-**217 tests**, all run in CI on every pull request against a real Postgres service container.
+**225 tests**, all run in CI on every pull request against a real Postgres service container.
 
 | Suite              | Count | Covers                                                                                                                                                                                                          |
 | ------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Server unit        | 53    | Cycle detection, rewatch order (including brief examples, random graphs, 50k chains), booking DP (brief examples, greedy counterexample, brute-force cross-check), TMDb client, metadata matching and providers |
-| Server integration | 88    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed plans, details endpoint and metadata caching                 |
-| Client             | 76    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                                                                |
+| Server integration | 95    | Every endpoint through HTTP against Postgres: validation, uniqueness, the brief's expected results, rollback of rejected updates, series and mixed plans, details endpoint and metadata caching                 |
+| Client             | 77    | API error mapping, form validation, optimistic plan updates, timeline, quote rendering, accessibility attributes                                                                                                |
 
 ```bash
 npm test                          # everything (integration tests need Postgres: npm run db:up)
@@ -355,6 +359,12 @@ The brief asks for unclear points to be decided and noted. These are mine:
 - Sample movie links come from the brief. Runtimes are theatrical runtimes; Avengers: Doomsday is unreleased, so its 150 minutes is an estimate.
 - Sample cinema names are fictional.
 
+**Guest mode**
+
+- Guest ids are random UUIDs created in the browser. They identify a browser, not a person, and are never returned by the API: responses only say `canEdit` and `addedByYou`.
+- Requests without `X-Guest-Id` have full access, which keeps the brief's API contract and its examples working for reviewers and scripts.
+- `watched` is shared, not per guest; per-user watch history belongs with real accounts.
+
 **Posters and details**
 
 - External details are display-only. Nothing in the rewatch order or booking logic depends on them, and the details endpoint still answers (with `metadata: null`) when every source is down.
@@ -371,5 +381,5 @@ The brief allows AI tools if their use is disclosed. I built this project with *
 
 - **Direction and decisions were mine:** PostgreSQL as the database, TMDb as an optional (not required) integration, the visual direction, and a professional workflow of one branch and pull request per feature with CI on every PR.
 - **The AI wrote most of the code:** the two algorithms, the API, the React views, the tests and this README. It explained each algorithm and decision as it went, and asked before major choices.
-- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 217 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
+- **Verification did not rely on trusting the AI.** Every example from the brief is an automated test, CI runs all 225 tests against a real database, and each view was exercised in a real browser against the real API. When a generated test turned out to prove nothing (a concurrency test that also passed with the lock removed), it was deleted rather than kept as false evidence.
 - No library solves features 1 or 2. The graph traversal and the dynamic programming are plain TypeScript in the two files linked above.
